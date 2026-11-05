@@ -12,7 +12,9 @@ Synth1 is copyright Daichi (Daichi Laboratory). All rights to Synth1 remain with
 
 ## Third-party code
 
-Synth1 leverages several third-party libraries, see `docs/THIRD_PARTY.md` for more details.
+Synth1 leverages several third-party libraries. 
+
+See: [THIRD_PARTY.md](docs/THIRD_PARTY.md)
 
 ## Requirements
 
@@ -21,11 +23,11 @@ This repo was built by reverse engineering the Synth1 AudioUnit v1.13 beta11, th
 To produce a byte-for-byte match of that release we need to replicate its build environment:
 
 - macOS 10.13.6 (High Sierra)
-- Xcode 9.4.1 (build 9F2000) installed at **`/Applications/Xcode941.app`**
+- Xcode 9.4.1 (build 9F2000) installed at `/Applications/Xcode941.app`
 
 ## Building
 
-The provided `build.sh` script configures the build environment, builds the plugin, and verifies it.
+The provided `build.sh` script configures the build environment, builds the plugin, and verifies it against the original.
 
 Options:
 
@@ -37,4 +39,4 @@ Options:
 
 ## Testing
 
-See: `tests/README.md`
+See: [tests/README.md](tests/README.md)
