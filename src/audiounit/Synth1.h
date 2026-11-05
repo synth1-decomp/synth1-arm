@@ -1,0 +1,368 @@
+/**
+ * @file Synth1.h
+ * @brief The Synth1 Audio Unit (MusicDevice).
+ *
+ * Built on the SinSynth sample of Apple's "Audio Unit Examples": TestNote /
+ * mTestNotes are still there but unused, the sound comes from CSynthesizer1
+ * (techpop).  sizeof(Synth1) == 7128.
+ */
+
+#include "AUInstrumentBase.h"
+#include "../techpop/synth1.h"
+
+#define kSynth1Version      0x00010000
+
+#define SYNTH1_PARAM_NUM    99          // parameters published to the host
+#define SYNTH1_CHUNK_SIZE   0x1000
+
+// private property: { CSynthesizer1*, S1G* } for the Cocoa view
+#define kSynth1Property_Synth   64000
+
+static const UInt32 kNumNotes = 12;
+
+/**
+ * @brief Sine-like test voice inherited from Apple's SinSynth sample.
+ *
+ * Registered with the instrument base in Synth1::Initialize() but never
+ * audible in practice: Synth1 renders through CSynthesizer1 and does not call
+ * the base class note rendering.
+ */
+struct TestNote : public SynthNote
+{
+    /**
+     * @brief Destroys the note; nothing to release.
+     */
+    virtual                 ~TestNote() {}
+
+    /**
+     * @brief Starts the note: resets phase and amplitude and computes the envelope slopes.
+     *
+     * The peak amplitude is 0.4 * (velocity / 127)^3; the attack takes 0.1 s,
+     * the release 0.9 s and the fast release 5 ms.
+     *
+     * @param inParams  Note parameters (velocity used).
+     * @return Always true.
+     */
+    virtual bool            Attack(const MusicDeviceNoteParams &inParams)
+                                {
+                                    double sampleRate = SampleRate();
+                                    phase = 0.;
+                                    amp = 0.;
+                                    maxamp = 0.4 * pow(inParams.mVelocity/127., 3.);
+                                    up_slope = maxamp / (0.1 * sampleRate);
+                                    dn_slope = -maxamp / (0.9 * sampleRate);
+                                    fast_dn_slope = -maxamp / (0.005 * sampleRate);
+                                    return true;
+                                }
+
+    /**
+     * @brief Gets the current amplitude, used to find the quietest note for voice stealing.
+     *
+     * @return Current amplitude (amp).
+     */
+    virtual Float32         Amplitude() { return amp; } // used for finding quietest note for voice stealing.
+
+    /**
+     * @brief Adds the note's output (sin^5 waveform times amplitude and global volume) to the first bus.
+     *
+     * Ramps the amplitude according to the note state and calls NoteEnded() when
+     * a release reaches zero.
+     *
+     * @param inAbsoluteSampleFrame Absolute sample time of the first frame (unused).
+     * @param inNumFrames           Number of frames.
+     * @param inBufferList          Output buffer lists per bus; only bus 0 is written (mono or stereo).
+     * @param inOutBusCount         Number of buses (unused).
+     * @return noErr, or -1 if bus 0 has more than two channels.
+     */
+    virtual OSStatus        Render(UInt64 inAbsoluteSampleFrame, UInt32 inNumFrames, AudioBufferList** inBufferList, UInt32 inOutBusCount);
+
+    double phase, amp, maxamp;
+    double up_slope, dn_slope, fast_dn_slope;
+};
+
+/**
+ * @brief MIDI event queued by Synth1::HandleMidiEvent() and played by Synth1::Process1().
+ */
+struct Synth1MidiEvent {
+    UInt8   status;     // +0
+    UInt8   channel;    // +1
+    UInt8   data1;      // +2
+    UInt8   data2;      // +3
+    int     frame;      // +4  sample offset in the current render slice
+};
+
+/**
+ * @brief The Synth1 Audio Unit: glue between the AU SDK and the CSynthesizer1 engine.
+ *
+ * Publishes the 99 sound parameters of the engine as global AU parameters,
+ * saves and restores the engine state as a VST-style chunk inside the AU
+ * preset dictionary, queues incoming MIDI events and renders them sample
+ * accurately (in steps of 16 frames) with the engine. The Cocoa view gets
+ * the engine pointer through the private property kSynth1Property_Synth.
+ *
+ * @note Each instance owns one CSynthesizer1, but the engine globals (s1g)
+ *       are shared by all instances in the process.
+ */
+class Synth1 : public AUMonotimbralInstrumentBase
+{
+public:
+    /**
+     * @brief Creates the AU (no inputs, one output) and its synthesizer engine.
+     *
+     * Points the engine globals (s1g) at the AU's static storage.
+     *
+     * @param inComponentInstance   Component instance from the host.
+     * @throws std::bad_alloc       If the engine cannot be allocated.
+     */
+                                Synth1(AudioUnit inComponentInstance);
+
+    /**
+     * @brief Deletes the engine and the MIDI event queue.
+     */
+    virtual                     ~Synth1();
+
+    /**
+     * @brief Initializes the instrument base and registers the (unused) test notes.
+     *
+     * @return Always noErr.
+     */
+    virtual OSStatus            Initialize();
+
+    /**
+     * @brief Reports the version of the Audio Unit.
+     *
+     * @return kSynth1Version (1.0.0).
+     */
+    virtual OSStatus            Version() { return kSynth1Version; }
+
+    /**
+     * @brief Lists the parameter IDs 0..98 of the global scope.
+     *
+     * @param inScope                   Scope; other scopes report nothing.
+     * @param[out] outParameterList     Receives the IDs if not NULL.
+     * @param[out] outNumParameters     Number of parameters (99 for the global scope).
+     * @return Always noErr.
+     */
+    virtual OSStatus            GetParameterList(       AudioUnitScope                  inScope,
+                                                        AudioUnitParameterID *          outParameterList,
+                                                        UInt32 &                        outNumParameters);
+
+    /**
+     * @brief Describes a parameter.
+     *
+     * Parameters found in the MIDI assign table (g_midiAssignParams) get their
+     * name and are writable with a generic 0..1 range (default 0.5); the others
+     * are read-only and unnamed.
+     *
+     * @param inScope                   Must be the global scope.
+     * @param inParameterID             Parameter ID (0..98).
+     * @param[out] outParameterInfo     Parameter description; the CFString name is released by the host.
+     * @return noErr, kAudioUnitErr_InvalidParameter or kAudioUnitErr_InvalidScope.
+     */
+    virtual OSStatus            GetParameterInfo(       AudioUnitScope                  inScope,
+                                                        AudioUnitParameterID            inParameterID,
+                                                        AudioUnitParameterInfo &        outParameterInfo);
+
+    /**
+     * @brief Reads a parameter of the current sound as a 0..1 value.
+     *
+     * Other IDs or scopes are passed to AUBase.
+     *
+     * @param inID          Parameter ID (0..98).
+     * @param inScope       Scope.
+     * @param inElement     Element.
+     * @param[out] outValue Host value, 0..1.
+     * @return noErr or the AUBase result.
+     */
+    virtual OSStatus            GetParameter(           AudioUnitParameterID            inID,
+                                                        AudioUnitScope                  inScope,
+                                                        AudioUnitElement                inElement,
+                                                        AudioUnitParameterValue &       outValue);
+
+    /**
+     * @brief Sets a parameter of the current sound from a 0..1 value.
+     *
+     * The value is converted to the engine's internal value, applied, marked
+     * as changed and the view is notified (postUpdate message). Parameter 0
+     * set to the magic value 0.000123 instead signals a bank/program change
+     * from the view (changedBankProgramFromGUI()). Other IDs or scopes are
+     * passed to AUBase.
+     *
+     * @param inID                      Parameter ID (0..98).
+     * @param inScope                   Scope.
+     * @param inElement                 Element.
+     * @param inValue                   Host value, 0..1.
+     * @param inBufferOffsetInFrames    Ignored for the synth parameters.
+     * @return noErr or the AUBase result.
+     */
+    virtual OSStatus            SetParameter(           AudioUnitParameterID            inID,
+                                                        AudioUnitScope                  inScope,
+                                                        AudioUnitElement                inElement,
+                                                        AudioUnitParameterValue         inValue,
+                                                        UInt32                          inBufferOffsetInFrames);
+
+    /**
+     * @brief Saves the AU state as an AU preset dictionary.
+     *
+     * The dictionary holds the version, type, subtype and manufacturer keys,
+     * the engine state as a VST chunk (data key) and the name of the current sound.
+     *
+     * @param[out] outData  New CFDictionary; the caller releases it.
+     * @return Always noErr.
+     */
+    virtual OSStatus            SaveState(              CFPropertyListRef *             outData);
+
+    /**
+     * @brief Restores the AU state from a preset dictionary written by SaveState().
+     *
+     * Accepts VST chunks and old DXi data; unrecognized data is ignored. On
+     * success the current sound's name becomes the present preset, the host
+     * is notified and the time is stored in m_restoreTime.
+     *
+     * @param inData    Preset dictionary.
+     * @return noErr, or kAudioUnitErr_InvalidFile if there is no data key.
+     */
+    virtual OSStatus            RestoreState(           CFPropertyListRef               inData);
+
+    /**
+     * @brief Renders one slice of audio.
+     *
+     * Follows the host tempo if the host provides it, then renders every
+     * output element with Process1().
+     *
+     * @param[in,out] ioActionFlags Render flags (unchanged).
+     * @param inTimeStamp           Time stamp of the slice (unused).
+     * @param inNumberFrames        Number of frames to render.
+     * @return Always noErr.
+     * @note An output with a single (mono or interleaved) buffer passes a NULL
+     *       right channel to Process1(), which then writes through it.
+     */
+    virtual OSStatus            Render(                 AudioUnitRenderActionFlags &    ioActionFlags,
+                                                        const AudioTimeStamp &          inTimeStamp,
+                                                        UInt32                          inNumberFrames);
+
+    /**
+     * @brief Queues a MIDI event for the next Render() call.
+     *
+     * System exclusive (0xF0) is ignored. The event's frame offset is rounded
+     * down to a multiple of 16. The queue doubles in size when full.
+     *
+     * @param inStatus      Status (message type, upper nibble).
+     * @param inChannel     MIDI channel (lower nibble).
+     * @param inData1       First data byte.
+     * @param inData2       Second data byte.
+     * @param inStartFrame  Frame offset within the next render slice.
+     * @return Always noErr.
+     * @note May call malloc() on the render thread when the queue grows.
+     */
+    virtual OSStatus            HandleMidiEvent(        UInt8   inStatus,
+                                                        UInt8   inChannel,
+                                                        UInt8   inData1,
+                                                        UInt8   inData2,
+                                                        UInt32  inStartFrame);
+
+    /**
+     * @brief Passes the new sample rate to the engine, then lets AUBase change the format.
+     *
+     * @param inScope       Scope.
+     * @param inElement     Element.
+     * @param inPrevFormat  Previous format.
+     * @param inNewFormat   New format (its sample rate is used).
+     * @return The AUBase result.
+     */
+    virtual OSStatus            ChangeStreamFormat(     AudioUnitScope                  inScope,
+                                                        AudioUnitElement                inElement,
+                                                        const CAStreamBasicDescription & inPrevFormat,
+                                                        const CAStreamBasicDescription & inNewFormat);
+
+    /**
+     * @brief Reports size and writability of the Cocoa UI property and the private engine property.
+     *
+     * @param inID              Property ID.
+     * @param inScope           Scope.
+     * @param inElement         Element.
+     * @param[out] outDataSize  Size of the property data.
+     * @param[out] outWritable  Whether the property is writable (false for both).
+     * @return noErr, or the MusicDeviceBase result for other properties.
+     */
+    virtual OSStatus            GetPropertyInfo(        AudioUnitPropertyID             inID,
+                                                        AudioUnitScope                  inScope,
+                                                        AudioUnitElement                inElement,
+                                                        UInt32 &                        outDataSize,
+                                                        Boolean &                       outWritable);
+
+    /**
+     * @brief Returns the Cocoa UI info or the engine pointers.
+     *
+     * kSynth1Property_Synth returns { CSynthesizer1*, S1G* } for the view factory.
+     *
+     * @param inID          Property ID.
+     * @param inScope       Scope.
+     * @param inElement     Element.
+     * @param[out] outData  Property data.
+     * @return noErr, an error from GetCustomCocoaUIViewInfos(), or the
+     *         MusicDeviceBase result for other properties.
+     */
+    virtual OSStatus            GetProperty(            AudioUnitPropertyID             inID,
+                                                        AudioUnitScope                  inScope,
+                                                        AudioUnitElement                inElement,
+                                                        void *                          outData);
+
+    /**
+     * @brief Locates the icon of the Audio Unit.
+     *
+     * @return URL of s1_07.png in the view bundle; the caller releases it.
+     */
+    virtual CFURLRef            CopyIconLocation();
+
+    /**
+     * @brief Reports the number of Cocoa views.
+     *
+     * @return 1: there is one Cocoa view.
+     */
+    virtual int                 GetNumCustomCocoaUIViews();
+
+    /**
+     * @brief Describes the Cocoa view: the Synth1CocoaViewFactory bundle inside the AU bundle.
+     *
+     * @param[out] outInfo  Bundle URL (released by the host) and view factory class name.
+     * @return noErr, or kAudioUnitErr_CannotDoInCurrentContext if the bundle is not found.
+     */
+    virtual OSStatus            GetCustomCocoaUIViewInfos(AudioUnitCocoaViewInfo* outInfo);
+
+    /**
+     * @brief Posts message WM_APP + 3 to the engine's notify window (the view) so it refreshes.
+     */
+    void                        postUpdate();
+
+    /**
+     * @brief Publishes the view's bank/program change to the host.
+     *
+     * Makes the name of the current sound the present preset and notifies the
+     * host of changed factory presets and present preset.
+     */
+    void                        changedBankProgramFromGUI();
+
+    /**
+     * @brief Renders frames with the engine, playing the queued MIDI events at their frame offsets.
+     *
+     * Audio is rendered in chunks of up to 256 frames between events; each
+     * event is passed to the engine when its frame is reached. The queue is
+     * emptied afterwards.
+     *
+     * @param[out] outputs      Left and right output buffers (non-interleaved).
+     * @param inNumberFrames    Number of frames.
+     */
+    void                        Process1(float** outputs, UInt32 inNumberFrames);
+
+private:
+    TestNote                    mTestNotes[kNumNotes];          // +0x02a0
+    CSynthesizer1*              m_pSynth;                       // +0x08a0
+    void*                       m_reserved[SYNTH1_PARAM_NUM];   // +0x08a8  (unused)
+    unsigned char               m_chunk[SYNTH1_CHUNK_SIZE];     // +0x0bc0  SaveState buffer
+    DWORD                       m_restoreTime;                  // +0x1bc0  GetTickCount() of the last RestoreState
+    int                         m_chunkVer;                     // +0x1bc4  113
+    Synth1MidiEvent*            m_pMidiEvents;                  // +0x1bc8
+    int                         m_midiEventMax;                 // +0x1bd0
+    int                         m_midiEventNum;                 // +0x1bd4
+};

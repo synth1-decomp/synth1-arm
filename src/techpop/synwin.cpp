@@ -1,0 +1,1035 @@
+/**
+ * @file synwin.cpp
+ * Main synth editor window CSynthWin (Cocoa view factory only).
+ *
+ * Builds the editor panel, keeps it in sync with the synthesizer and reports parameter
+ * edits to the Audio Unit host. The sound select popup and dialogs are in synthdlg.cpp.
+ */
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+#include <AudioToolbox/AudioToolbox.h>
+#include "common.h"
+#include "drawgui.h"
+#include "sigdev.h"
+#include "sound.h"
+#include "synth1.h"
+#include "synwin.h"
+
+extern BOOL g_bTransparencyWin;
+tagWriteProgramInfo* g_pWPI;
+
+static const char* g_arpString[20] = {
+    "(1)", "(2)+(4)+(8)", "(2)+(4)", "(2)", "(4)+(8)+(16)", "(4)+(8)", "(1) /3", "(4)",
+    "(8)+(16)+(32)", "(8)+(16)", "(2) /3", "(8)", "(16)+(32)", "(4) /3", "(16)", "(8) /3",
+    "(32)", "(16) /3", "(32) /3",
+};
+static const char* g_delayString[20] = {
+    "0.1 msec", "(32) /3", "(16) /3", "(32)", "(8) /3", "(16)", "(4) /3", "(16)+(32)",
+    "(8)", "(2) /3", "(8)+(16)", "(8)+(16)+(32)", "(4)", "(1) /3", "(4)+(8)", "(4)+(8)+(16)",
+    "(2)", "(2)+(4)", "(2)+(4)+(8)", "(1)",
+};
+static const char* g_nLFOTimeString[30] = {
+    "(1) x 16", "(1) x 12", "(1) x 9", "(1) x 8", "(1) x 6", "(1) x 4 + (2)", "(1) x 4", "(1) x 3",
+    "(1) x 2 + (4)", "(1) x 2", "(1) + (2)", "(1)", "(2)+(4)+(8)", "(2)+(4)", "(2)", "(4)+(8)+(16)",
+    "(4)+(8)", "(1) /3", "(4)", "(8)+(16)+(32)", "(8)+(16)", "(2) /3", "(8)", "(16)+(32)",
+    "(4) /3", "(16)", "(8) /3", "(32)", "(16) /3", "(32) /3",
+};
+static int g_ChorusKindVals[] = { 1, 2, 4 };
+static char* g_ChorusKindText[] = { (char*)"x1", (char*)"x2", (char*)"x4" };
+
+static void sendParamChangedNotify2Host(void* pAU, int id);
+
+#define WM_TIMER_       0x0014
+
+//==================================================================
+// CSynthWin
+
+CSynthWin::CSynthWin()
+{
+}
+
+CSynthWin::CSynthWin(void* pAU)
+{
+    m_pAU = pAU;
+    m_winType = CCWIN_CUSTOM;
+    m_pUser = NULL;
+}
+
+CSynthWin::~CSynthWin()
+{
+    if (m_pUser) {
+        exitCapture(m_pUser);
+        m_pUser = NULL;
+    }
+}
+
+void CSynthWin::onCreate(HWND hWnd, CSynthesizer1* pSynth)
+{
+    m_hWnd = hWnd;
+    m_pSynth = pSynth;
+    pSynth->setSynWin(hWnd);
+    g_bTransparencyWin = getIniInt("transparencywin", 1);
+    constructPanel(hWnd);
+    m_guis.drawAll();
+    drawAllParams();
+    m_pUser = initCapture(hWnd);
+}
+
+void CSynthWin::constructPanelWheelAsign(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CLCD* pLCD;
+    CSpin* pSpin;
+    S1G* g = s1g;
+    int knobSize = h - 2;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 83, 12, (char*)" Wheel / MIDI", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 12, 0, 25, m_colText));
+    m_guis.add(new CLine(hWnd, 0, x, y, 315, 0, m_colText));
+    m_guis.add(new CLine(hWnd, 0, x, y + 37, 315, 0, m_colText));
+    m_guis.add(new CLine(hWnd, 0, x + 315, y, 0, 37, m_colText));
+    pLCD = new CLCD(hWnd, 1040, x + 28, y + 15, 18, 16, (char*)"24", m_colPanel, m_colLCD, 1, 1);
+    m_guis.add(pLCD);
+    pLCD->setNumericRange(0, 24, 12, (char*)"%.2d");
+    pSpin = new CSpin(hWnd, 91, x + 48, y + 15, 8, 18, (char*)"p.b", 1, -41, 0, 0, 9, m_colPanel, m_colText, m_colKnob);
+    m_guis.add(pSpin);
+    pSpin->setLCD(pLCD);
+    m_guis.add(new CLabel(hWnd, 0, x + 3, y + 23, 20, 9, (char*)"range", m_colPanel, m_colText, 0));
+    int sx = x + 87;
+    m_guis.add(new CLabel(hWnd, 0, sx, y + 4, 20, 10, (char*)"src1", m_colPanel, m_colText, 0));
+    pLCD = new CLCD(hWnd, 1086, x + 110, y + 3, 77, 13, (char*)"", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g->m_midiCtrlSrcVals, (char**)g->m_midiCtrlSrcText, g->m_midiCtrlSrcNum, 7);
+    m_guis.add(new CLabel(hWnd, 0, x + 189, y + 4, 20, 10, (char*)"->", m_colPanel, m_colText, 0));
+    m_guis.add(new CRoteryV(hWnd, 1050, x + 202, y + 3, knobSize, knobSize, 127, 0, (char*)"", -10, -3, 0, 9, m_colPanel, m_colText, m_colKnob));
+    pLCD = new CLCD(hWnd, 1087, x + 219, y + 3, 77, 13, (char*)"", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g->m_wheelAssignVals, (char**)g->m_wheelAssignText, g->m_wheelAssignNum, 20);
+    m_guis.add(new CLabel(hWnd, 0, sx, y + 21, 20, 10, (char*)"src2", m_colPanel, m_colText, 0));
+    pLCD = new CLCD(hWnd, 1088, x + 110, y + 20, 77, 13, (char*)"", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g->m_midiCtrlSrcVals, (char**)g->m_midiCtrlSrcText, g->m_midiCtrlSrcNum, 7);
+    m_guis.add(new CLabel(hWnd, 0, x + 189, y + 21, 20, 10, (char*)"->", m_colPanel, m_colText, 0));
+    m_guis.add(new CRoteryV(hWnd, 1051, x + 202, y + 20, knobSize, knobSize, 127, 0, (char*)"", -10, -3, 0, 9, m_colPanel, m_colText, m_colKnob));
+    pLCD = new CLCD(hWnd, 1089, x + 219, y + 20, 77, 13, (char*)"", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g->m_wheelAssignVals, (char**)g->m_wheelAssignText, g->m_wheelAssignNum, 20);
+}
+
+void CSynthWin::constructPanelProgramArea(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    C3DFrame* pFrame;
+    CLCD* pLCD;
+    CPushButton* pButton;
+    CRoteryV* pRotery;
+    CSpin* pSpin;
+    pFrame = new C3DFrame(hWnd,0,x + -4,y + -4,0x13d,0x27, m_colPanel);
+    m_guis.add(pFrame);
+    pRotery = new CRoteryV(hWnd,0x4e6,x + 1,y + 1,h,h,0x7f,0,(char*)"vol ",0, 0x11,0,10,m_colPanel,m_colText, m_colKnob);
+    m_guis.add(pRotery);
+    pSpin = new CSpin(hWnd,0x4e4,x + 0x1b,y,8,0x12,(char*)"",1,0xc,0x14,0,10, m_colPanel,m_colText, m_colKnob);
+    m_guis.add(pSpin);
+    pLCD = new CLCD(hWnd,3,x + 0x26,y,0xe6,0x10,(char*)" init ", m_colPanel,m_colLCD,0,0);
+    m_guis.add(pLCD);
+    pSpin->setRange(0,0x7f,0);
+    pLCD = new CLCD(hWnd,5,x + 0x26,y + 0x11,0xe6,0xf,(char*)"00:", m_colPanel,m_colLCD,0,0);
+    m_guis.add(pLCD);
+    pButton = new CPushButton(hWnd,0x5e,x + 0x116,y + -1,0x1e,0xf,(char*)"write", m_colPanel,m_colKnobBk,0x1e1e5a);
+    m_guis.add(pButton);
+    pButton = new CPushButton(hWnd,0xf,x + 0x116,y + 0x11,0x1e,0xf,(char*)"opt", m_colPanel,m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+}
+
+void CSynthWin::constructPanelPlayMode(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CPushButton* pButton;
+    CLCD* pLCD;
+    CSpin* pSpin;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 120, 12, (char*)" Voice ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 95, m_colText));
+    pButton = new CPushButton(hWnd, 1038, 0, 0, 0, 0, (char*)"mode", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 201, 0, x + 3, y + 13, w, w, 0, 1, (char*)"poly", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 202, 1, x + 3, y + 23, w, w, 0, 0, (char*)"mono", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 203, 2, x + 3, y + 33, w, w, 0, 0, (char*)"legato", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(201, 203, 1);
+    pLCD = new CLCD(hWnd, 1094, x + 70, y + 15, 18, 16, (char*)"16", m_colPanel, m_colLCD, 1, 1);
+    m_guis.add(pLCD);
+    pLCD->setNumericRange(1, 32, 32, (char*)"%.2d");
+    pSpin = new CSpin(hWnd, 93, x + 90, y + 15, 8, 18, (char*)"poly", 1, -22, 17, 0, 9, m_colPanel, m_colText, m_colKnob);
+    m_guis.add(pSpin);
+    pSpin->setLCD(pLCD);
+    m_guis.add(new CLine(hWnd, 0, x, y + 44, 120, 0, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1039, x + 59, y + 55, h, h, 127, 0, (char*)"portamento ", 7, -10, 0, 9, m_colPanel, m_colText, m_colKnob));
+    pButton = new CPushButton(hWnd, 1074, x + 89, y + 55, 30, 14, (char*)"auto", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 97, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 98, 1, x + 79, y + 59, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(97, 98, 1);
+    m_guis.add(new CLine(hWnd, 0, x + 55, y + 44, 0, 31, m_colText));
+    m_guis.add(new CLine(hWnd, 0, x + 55, y + 75, 65, 0, m_colText));
+    pButton = new CPushButton(hWnd, 1073, x + 13, y + 54, 33, 14, (char*)"unison", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 95, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 96, 1, x + 3, y + 56, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(95, 96, 1);
+    pLCD = new CLCD(hWnd, 1093, x + 5, y + 78, 12, 16, (char*)"00", m_colPanel, m_colLCD, 1, 1);
+    m_guis.add(pLCD);
+    pLCD->setNumericRange(2, 8, 2, (char*)"%d");
+    pSpin = new CSpin(hWnd, 101, x + 19, y + 78, 8, 18, (char*)"num", 1, -16, 18, 0, 10, m_colPanel, m_colText, m_colKnob);
+    m_guis.add(pSpin);
+    pSpin->setLCD(pLCD);
+    m_guis.add(new CRoteryV(hWnd, 1075, x + 33, y + 80, h - 1, h - 1, 127, 0, (char*)"det ", 0, 16, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1092, x + 54, y + 80, h - 1, h - 1, 127, 0, (char*)"phase", 0, 16, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLED(hWnd, 90, 0, x + 69, y + 80, w - 3, w - 3, 1, 0, 0, 0, 0, 0, 0, 0, m_colPanel, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1084, x + 80, y + 80, h - 1, h - 1, 127, 0, (char*)"sprd", 0, 16, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1085, x + 102, y + 80, h - 1, h - 1, 48, 0, (char*)"pitch", 0, 16, 0, 9, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelVCO(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CPushButton* pButton;
+    CLCD* pLCD;
+    CSpin* pSpin;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 180, 12, (char*)" Oscillators ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 132, m_colText));
+    pButton = new CPushButton(hWnd, 1000, x + 5, y + 23, 15, 15, (char*)"1", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 6, 0, x + 26, y + 21, w, w, 0, 0, (char*)"si", 147, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 7, 3, x + 26, y + 31, w, w, 0, 0, (char*)"tr", 149, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 8, 1, x + 49, y + 21, w, w, 0, 1, (char*)"sw", 151, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 9, 2, x + 49, y + 31, w, w, 0, 0, (char*)"pu", 150, 10, 0, 8, 8, m_colPanel, m_colText));
+    pButton->setLEDGroup(6, 9, 1);
+    m_guis.add(new CRoteryV(hWnd, 1076, x + 73, y + 20, h, h, 127, 0, (char*)"det", 0, 16, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1045, x + 94, y + 20, h, h, 127, 0, (char*)"FM", 0, 16, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLine(hWnd, 0, x + 115, y + 17, 0, 30, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1095, x + 120, y + 23, h, h, 127, 0, (char*)"sub", 0, -10, 0, 10, m_colPanel, m_colText, m_colKnob));
+    pButton = new CPushButton(hWnd, 1096, 0, 0, 0, 0, (char*)"sub", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 70, 0, x + 140, y + 21, w, w, 0, 0, (char*)"si", 147, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 71, 1, x + 140, y + 31, w, w, 0, 0, (char*)"tr", 149, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 72, 2, x + 163, y + 21, w, w, 0, 1, (char*)"sw", 151, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 73, 3, x + 163, y + 31, w, w, 0, 0, (char*)"sq", 150, 10, 0, 8, 8, m_colPanel, m_colText));
+    pButton->setLEDGroup(70, 73, 1);
+    pButton = new CPushButton(hWnd, 1097, 0, 0, 0, 0, (char*)"suboct", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 74, 0, x + 120, y + 41, w, w, 0, 0, (char*)"0oct", 0, 9, 0, 0, 9, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 75, 1, x + 150, y + 41, w, w, 0, 0, (char*)"-1oct", 0, 9, 0, 0, 9, m_colPanel, m_colText));
+    pButton->setLEDGroup(74, 75, 0);
+    m_guis.add(new CLine(hWnd, 0, x, y + 52, 180, 0, m_colText));
+    pButton = new CPushButton(hWnd, 1001, x + 5, y + 58, 15, 15, (char*)"2", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 11, 3, x + 26, y + 56, w, w, 0, 0, (char*)"tr", 149, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 12, 1, x + 26, y + 66, w, w, 0, 1, (char*)"sw", 151, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 13, 2, x + 49, y + 56, w, w, 0, 0, (char*)"pu", 150, 10, 0, 8, 8, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 14, 4, x + 49, y + 66, w, w, 0, 0, (char*)"no", 152, 10, 0, 8, 8, m_colPanel, m_colText));
+    pButton->setLEDGroup(11, 14, 1);
+    pButton = new CPushButton(hWnd, 1007, x + 72, y + 63, 30, 15, (char*)"ring", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 24, 1, x + 83, y + 54, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(23, 24, 1);
+    pButton = new CPushButton(hWnd, 1006, x + 105, y + 63, 30, 15, (char*)"sync", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 27, 1, x + 116, y + 54, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(26, 27, 1);
+    m_guis.add(new CRoteryV(hWnd, 1002, x + 59, y + 83, h, h, 127, 0, (char*)"pitch", 18, 8, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLED(hWnd, 17, 0, x + 49, y + 81, w, w, 0, 0, 0, 0, 0, 0, 0, 0, m_colPanel, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1003, x + 101, y + 83, h, h, 127, 0, (char*)"fine", 18, 8, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLED(hWnd, 19, 0, x + 91, y + 81, w, w, 0, 0, 0, 0, 0, 0, 0, 0, m_colPanel, m_colText));
+    m_guis.add(new CLine(hWnd, 0, x, y + 101, 138, 0, m_colText));
+    pButton = new CPushButton(hWnd, 1010, x + 15, y + 106, 30, 15, (char*)"m.env", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 51, 1, x + 4, y + 109, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(50, 51, 1);
+    m_guis.add(new CRoteryV(hWnd, 1012, x + 52, y + 106, h, h, 127, 0, (char*)"A", 17, 10, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1013, x + 78, y + 106, h, h, 127, 0, (char*)"D", 17, 10, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1011, x + 104, y + 106, h, h, 127, 0, (char*)"amt", 17, 10, 0, 10, m_colPanel, m_colText, m_colKnob));
+    pButton = new CPushButton(hWnd, 1071, x + 10, y + 125, 30, 15, (char*)"dest.", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 52, 0, x + 45, y + 129, w, w, 0, 1, (char*)"osc2", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 53, 1, x + 80, y + 129, w, w, 0, 0, (char*)"FM", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 54, 2, x + 109, y + 129, w, w, 0, 0, (char*)"p/w", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(52, 54, 1);
+    pButton = new CPushButton(hWnd, 1004, x + 15, y + 80, 30, 15, (char*)"track", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 21, 1, x + 4, y + 83, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(20, 21, 1);
+    m_guis.add(new CLine(hWnd, 0, x + 138, y + 52, 0, 90, m_colText));
+    pLCD = new CLCD(hWnd, 1009, x + 142, y + 56, 25, 14, (char*)"00", m_colPanel, m_colLCD, 1, 1);
+    m_guis.add(pLCD);
+    pLCD->setNumericRange(-24, 24, 0, (char*)"%.2d");
+    pSpin = new CSpin(hWnd, 28, x + 168, y + 55, 8, 16, (char*)"key shift", 1, -26, 18, 0, 8, m_colPanel, m_colText, m_colKnob);
+    m_guis.add(pSpin);
+    pSpin->setLCD(pLCD);
+    m_guis.add(new CRoteryV(hWnd, 1005, x + 143, y + 83, h, h, 127, 0, (char*)"mix", 0, 17, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1008, x + 165, y + 83, h, h, 127, 0, (char*)"p/w", 0, 17, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1091, x + 143, y + 117, h, h, 127, 0, (char*)"phase", -2, 17, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLED(hWnd, 30, 0, x + 148, y + 110, w - 2, w - 2, 1, 0, 0, 0, 0, 0, 0, 0, m_colPanel, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1072, x + 165, y + 117, h, h, 127, 0, (char*)"tune", 0, 17, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLED(hWnd, 29, 0, x + 170, y + 110, w - 2, w - 2, 0, 0, 0, 0, 0, 0, 0, 0, m_colPanel, m_colText));
+}
+
+void CSynthWin::constructPanelVCF(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CPushButton* pButton;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 130, 12, (char*)" Filter ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 62, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1015, x + 3, y + 15, h, h, 127, 0, (char*)" A", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1016, x + 23, y + 15, h, h, 127, 0, (char*)" D", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1017, x + 43, y + 15, h, h, 127, 0, (char*)" S", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1018, x + 63, y + 15, h, h, 127, 0, (char*)" R", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1021, x + 83, y + 15, h, h, 127, 0, (char*)"amt", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1019, x + 3, y + 45, h, h, 127, 0, (char*)"frq", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1020, x + 23, y + 45, h, h, 127, 0, (char*)"res", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1023, x + 43, y + 45, h, h, 127, 0, (char*)"sat", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1022, x + 63, y + 45, h, h, 127, 0, (char*)"trk", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    pButton = new CPushButton(hWnd, 1024, x + 82, y + 55, 17, 15, (char*)"vel", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 65, 0, 0, 0, 0, 0, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 66, 1, x + 85, y + 45, w, w, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(65, 66, 1);
+    pButton = new CPushButton(hWnd, 1014, x + 103, y + 15, 26, 15, (char*)"type", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 60, 0, x + 103, y + 33, w, w, 0, 0, (char*)"LP12", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 61, 1, x + 103, y + 43, w, w, 0, 0, (char*)"LP24", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 62, 2, x + 103, y + 53, w, w, 0, 0, (char*)"HP12", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 63, 3, x + 103, y + 63, w, w, 0, 0, (char*)"BP12", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 64, 4, x + 103, y + 73, w, w, 0, 0, (char*)"LPDL", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(60, 64, 1);
+}
+
+void CSynthWin::constructPanelVCA(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    m_guis.add(new CLabel(hWnd, 0, x, y, 130, 12, (char*)" Amplifier ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 33, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1025, x + 3, y + 15, h, h, 127, 0, (char*)" A", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1026, x + 23, y + 15, h, h, 127, 0, (char*)" D", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1027, x + 43, y + 15, h, h, 127, 0, (char*)" S", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1028, x + 63, y + 15, h, h, 127, 0, (char*)" R", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1029, x + 83, y + 15, h, h, 127, 0, (char*)"gain", -2, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1030, x + 103, y + 15, h, h, 127, 0, (char*)"vel", 1, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelLFO(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CLCD* pLCD;
+    CPushButton* pButton;
+    static int g_LFOvals[] = { 0, 1, 5, 2, 3, 4 };
+    static int g_LFObmps[] = { 151, 149, 147, 150, 152, 153 };
+    m_guis.add(new CLabel(hWnd, 0, x, y, 180, 12, (char*)" LFO ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 70, m_colText));
+    m_guis.add(new CToggleButton(hWnd, 1057, x + 5, y + 15, 15, 15, 1, (char*)"1", m_colPanel, col3, col1, col2, 0));
+    pLCD = new CLCD(hWnd, 1042, x + 24, y + 15, 18, 15, (char*)"down", m_colPanel, m_colLCD, 2, 3);
+    m_guis.add(pLCD);
+    pLCD->setValsAndBmp(g_LFOvals, g_LFObmps, 6, 3);
+    pButton = new CPushButton(hWnd, 1041, x + 44, y + 15, 19, 14, (char*)"dst", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 82, 1, x + 67, y + 13, w, w, 0, 0, (char*)" osc2", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 83, 2, x + 67, y + 23, w, w, 0, 0, (char*)"osc1,2", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 84, 3, x + 67, y + 33, w, w, 0, 0, (char*)"filter", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 85, 4, x + 67, y + 43, w, w, 0, 0, (char*)" amp", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 86, 5, x + 67, y + 53, w, w, 0, 0, (char*)" p/w", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 87, 6, x + 67, y + 63, w, w, 0, 0, (char*)"  FM", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    m_guis.add(new CLED(hWnd, 88, 7, x + 67, y + 73, w, w, 0, 0, (char*)" pan", 0, 10, 0, 0, 10, m_colPanel, m_colText, 3));
+    pButton->setLEDGroup(82, 88, 1);
+    m_guis.add(new CRoteryV(hWnd, 1043, x + 4, y + 35, h, h, 127, 0, (char*)"spd", 17, -1, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1044, x + 46, y + 35, h, h, 127, 0, (char*)"amt", -16, 8, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLabel(hWnd, 0, x + 20, y + 52, 20, 11, (char*)"-sync-", m_colPanel, m_colText, 0));
+    pButton = new CPushButton(hWnd, 1067, x + 4, y + 63, 28, 14, (char*)"tempo", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 76, 0, 0, 0, 0, 0, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 77, 1, x + 12, y + 53, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(76, 77, 1);
+    pButton = new CPushButton(hWnd, 1068, x + 44, y + 63, 20, 14, (char*)"key", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 79, 0, 0, 0, 0, 0, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 80, 1, x + 52, y + 53, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(79, 80, 1);
+    m_guis.add(new CToggleButton(hWnd, 1058, x + 161, y + 15, 15, 15, 1, (char*)"2", m_colPanel, col3, col1, col2, 0));
+    pLCD = new CLCD(hWnd, 1047, x + 139, y + 15, 18, 15, (char*)"down", m_colPanel, m_colLCD, 2, 3);
+    m_guis.add(pLCD);
+    pLCD->setValsAndBmp(g_LFOvals, g_LFObmps, 6, 3);
+    m_guis.add(new CRoteryV(hWnd, 1048, x + 119, y + 35, h, h, 127, 0, (char*)"spd", 17, -1, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1049, x + 161, y + 35, h, h, 127, 0, (char*)"amt", -16, 8, 0, 9, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CLabel(hWnd, 0, x + 135, y + 52, 20, 11, (char*)"-sync-", m_colPanel, m_colText, 0));
+    pButton = new CPushButton(hWnd, 1069, x + 119, y + 63, 28, 14, (char*)"tempo", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 102, 0, 0, 0, 0, 0, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 103, 1, x + 127, y + 53, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(102, 103, 1);
+    pButton = new CPushButton(hWnd, 1070, x + 159, y + 63, 20, 14, (char*)"key", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 105, 0, 0, 0, 0, 0, 1, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 106, 1, x + 167, y + 53, w, w, 1, 1, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(105, 106, 1);
+    pButton = new CPushButton(hWnd, 1046, x + 118, y + 15, 19, 14, (char*)"dst", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 108, 1, x + 108, y + 13, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 109, 2, x + 108, y + 23, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 110, 3, x + 108, y + 33, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 111, 4, x + 108, y + 43, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 112, 5, x + 108, y + 53, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 113, 6, x + 108, y + 63, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    m_guis.add(new CLED(hWnd, 114, 7, x + 108, y + 73, w, w, 0, 0, 0, 0, 10, 0, 0, 10, m_colPanel, m_colText, -3));
+    pButton->setLEDGroup(108, 114, 1);
+}
+
+void CSynthWin::constructPanelArp(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CPushButton* pButton;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 130, 12, (char*)" Arpeggiator ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 62, m_colText));
+    m_guis.add(new CToggleButton(hWnd, 1059, x + 4, y + 15, 15, 15, 1, (char*)"ON", m_colPanel, col3, col1, col2, 0));
+    pButton = new CPushButton(hWnd, 1031, x + 24, y + 15, 30, 15, (char*)"type", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 32, 1, x + 24, y + 33, w, w, 0, 0, (char*)"updown", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 33, 2, x + 24, y + 43, w, w, 0, 0, (char*)"up", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 34, 3, x + 24, y + 53, w, w, 0, 0, (char*)"down", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 35, 4, x + 24, y + 63, w, w, 0, 0, (char*)"random", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(32, 35, 1);
+    pButton = new CPushButton(hWnd, 1032, x + 71, y + 15, 30, 15, (char*)"range", m_colPanel, m_colKnobBk, m_colKnob);
+    m_guis.add(pButton);
+    m_guis.add(new CLED(hWnd, 37, 0, x + 71, y + 33, w, w, 0, 0, (char*)"1oct", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 38, 1, x + 71, y + 43, w, w, 0, 0, (char*)"2oct", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 39, 2, x + 71, y + 53, w, w, 0, 0, (char*)"3oct", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    m_guis.add(new CLED(hWnd, 40, 3, x + 71, y + 63, w, w, 0, 0, (char*)"4oct", 0, 10, 0, 0, 10, m_colPanel, m_colText));
+    pButton->setLEDGroup(37, 40, 1);
+    m_guis.add(new CRoteryV(hWnd, 1033, x + 109, y + 15, h, h, 18, 0, (char*)"beat", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1034, x + 109, y + 47, h, h, 127, 0, (char*)"gate", 0, 17, 0, 10, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelEFXS(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CLCD* pLCD;
+    static int g_efxTypeVals[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    static char* g_efxTypeText[] = { (char*)"a.d.1", (char*)"a.d.2", (char*)"d.d.", (char*)"deci.", (char*)"r.m.", (char*)"comp.", (char*)"ph.1", (char*)"ph.2", (char*)"ph.3", (char*)"ph.4" };
+    m_guis.add(new CLabel(hWnd, 0, x, y, 120, 11, (char*)" Effect ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 25, m_colText));
+    m_guis.add(new CToggleButton(hWnd, 1077, x + 5, y + 16, 14, 14, 1, (char*)"ON", m_colPanel, col3, col1, col2, 0));
+    pLCD = new CLCD(hWnd, 1078, x + 22, y + 17, 30, 13, (char*)"dist.1", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g_efxTypeVals, g_efxTypeText, 10, 5);
+    m_guis.add(new CRoteryV(hWnd, 1079, x + 55, y + 14, 14, 14, 127, 0, (char*)"ctl1", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1080, x + 79, y + 14, 14, 14, 127, 0, (char*)"ctl2", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1081, x + 103, y + 14, 14, 14, 127, 0, (char*)"level", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelEqPan(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    m_guis.add(new CLabel(hWnd, 0, x, y, 120, 11, (char*)" Equalizer / Pan ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 25, m_colText));
+    m_guis.add(new CRoteryV(hWnd, 1061, x + 6, y + 14, 14, 14, 127, 0, (char*)"freq", -2, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1062, x + 29, y + 14, 14, 14, 127, 0, (char*)"level", -3, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1063, x + 52, y + 14, 14, 14, 127, 0, (char*)" Q", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1060, x + 75, y + 14, 14, 14, 127, 0, (char*)"tone", -1, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1090, x + 98, y + 14, 14, 14, 127, 0, (char*)"L-R", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelDelay(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CLCD* pLCD;
+    static int g_delayTypeVals[] = { 0, 1, 2 };
+    static char* g_delayTypeText[] = { (char*)"ST", (char*)"X", (char*)"PP" };
+    m_guis.add(new CLabel(hWnd, 0, x, y, 120, 11, (char*)" Tempo Delay ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 25, m_colText));
+    m_guis.add(new CToggleButton(hWnd, 1065, x + 5, y + 16, 14, 14, 1, (char*)"ON", m_colPanel, col3, col1, col2, 0));
+    pLCD = new CLCD(hWnd, 1082, x + 22, y + 17, 13, 13, (char*)"ST", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g_delayTypeVals, g_delayTypeText, 3, 3);
+    int kx = x + 38;
+    int ky = y + 15;
+    m_guis.add(new CRoteryV(hWnd, 1035, kx, ky, 13, 13, 19, 0, (char*)"time", -2, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1083, kx + 18, ky, 13, 13, 127, 0, (char*)"sprd", -1, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1036, kx + 36, ky, 13, 13, 127, 0, (char*)"fdbk", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1098, kx + 54, ky, 13, 13, 127, 0, (char*)"tone", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1037, kx + 72, ky, 13, 13, 127, 0, (char*)"d/w", 0, 15, 0, 8, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanelChorus(HWND hWnd, int x, int y, int w, int h, COLORREF col1, COLORREF col2, COLORREF col3)
+{
+    CLCD* pLCD;
+    m_guis.add(new CLabel(hWnd, 0, x, y, 120, 11, (char*)" Chorus / Flanger ", m_colText, m_colPanel, 0));
+    m_guis.add(new CLine(hWnd, 0, x, y + 10, 0, 25, m_colText));
+    m_guis.add(new CToggleButton(hWnd, 1066, x + 5, y + 15, 14, 14, 1, (char*)"ON", m_colPanel, col3, col1, col2, 0));
+    pLCD = new CLCD(hWnd, 1064, x + 22, y + 17, 13, 13, (char*)"x2", m_colPanel, m_colLCD, 2, 2);
+    m_guis.add(pLCD);
+    pLCD->setValsAndTexts(g_ChorusKindVals, g_ChorusKindText, 3, 3);
+    int kx = x + 38;
+    int ky = y + 14;
+    m_guis.add(new CRoteryV(hWnd, 1052, kx, ky, 13, 13, 127, 0, (char*)"time", 0, 14, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1053, kx + 18, ky, 13, 13, 127, 0, (char*)"deph", 0, 14, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1054, kx + 36, ky, 13, 13, 127, 0, (char*)"rate", 0, 14, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1055, kx + 54, ky, 13, 13, 127, 0, (char*)"fdbk", 0, 14, 0, 8, m_colPanel, m_colText, m_colKnob));
+    m_guis.add(new CRoteryV(hWnd, 1056, kx + 72, ky, 13, 13, 127, 0, (char*)"levl", 0, 14, 0, 8, m_colPanel, m_colText, m_colKnob));
+}
+
+void CSynthWin::constructPanel(HWND hWnd)
+{
+    m_coordScale = getIniInt("coordinatesscale", 150);
+    int color = getIniInt("panelcolor", 0x87c8c8);
+    if (color < 0) color = 0x87c8c8;
+    m_colPanel = color;
+    color = getIniInt("textcolor", 0x3c3c3c);
+    if (color < 0) color = 0x3c3c3c;
+    m_colText = color;
+    m_colKnob = 0x1e1e1e;
+    m_colKnobBk = 0xc8c8c8;
+    m_colLabelText = 0x646464;
+    m_colLCD = 0xb9d200;
+    m_colVerText = 0xc8c8ff;
+    m_colVerBk = 0x96;
+    m_panelW = m_coordScale * 466 / 100;
+    m_panelH = m_coordScale * 340 / 100;
+    m_guis.init(hWnd, m_panelW, m_panelH, m_colPanel, m_coordScale, m_pSynth);
+    m_guis.changedSliderType();
+    m_guis.add(new CLabel(hWnd, 0, 7, 6, 60, 15, (char*)" Synth1 ", m_colPanel, m_colLabelText, 1));
+    m_guis.add(new CLabel(hWnd, 0, 67, 10, 60, 10, (char*)"Virtual Analog ", m_colPanel, m_colLabelText, 2));
+    m_guis.add(new CLabel(hWnd, 0, 300, 7, 130, 13, (char*)" V1.13beta11(AU) 2021.6  ", m_colVerBk, m_colVerText, 0));
+    if (CSignalDevice::m_bSSE == 0) {
+        m_guis.add(new CLabel(hWnd, 0, 60, 7, 225, 13, (char*)" Error:CPU doesn't support SSE2.", m_colVerBk, m_colVerText, 0));
+    }
+    m_guis.add(new CLEDMatrix(hWnd, 0x68, 332, 307, 128, 16, 16, 2, (char*)"", m_colPanel, m_colLabelText));
+    constructPanelVCO(hWnd, 10, 22, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelLFO(hWnd, 10, 167, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelWheelAsign(hWnd, 10, 252, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelProgramArea(hWnd, 14, 299, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelVCA(hWnd, 196, 22, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelVCF(hWnd, 196, 80, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelArp(hWnd, 196, 167, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelEFXS(hWnd, 332, 22, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelEqPan(hWnd, 332, 61, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelDelay(hWnd, 332, 100, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelChorus(hWnd, 332, 139, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+    constructPanelPlayMode(hWnd, 332, 178, 8, 16, 0xc8c8c8, 0x78ffff, 0);
+}
+
+void CSynthWin::drawAllParams()
+{
+    onUser_PROGRAM_CHANGED(0, (LPARAM)m_pSynth->getCurrentSound());
+    drawCommonPartByParamID(254);
+}
+
+void CSynthWin::changeWindowHandle(HWND hWnd)
+{
+    m_pSynth->setSynWin(hWnd);
+    m_guis.changeWindowHandle(hWnd);
+    m_hWnd = hWnd;
+    if (hWnd) return;
+    m_pSynth->endMidiLearning();
+}
+
+void CSynthWin::paint(HWND hWnd, CGContextRef hdc, RECT* rc)
+{
+    m_guis.paint(hdc, rc, rc->left, rc->top);
+}
+
+void CSynthWin::onMouseMessage(int msg, LPARAM lParam)
+{
+    m_guis.processMouseMessage(msg, lParam);
+}
+
+void CSynthWin::onUser_GUIPARTS(WPARAM wParam, LPARAM lParam)
+{
+    long id = (long)wParam;
+    int val = (int)lParam;
+    switch (id) {
+    // sound parameters 0..98
+    case 1000: case 1001: case 1002: case 1003: case 1004: case 1005: case 1006: case 1007: case 1008: case 1009:
+    case 1010: case 1011: case 1012: case 1013: case 1014: case 1015: case 1016: case 1017: case 1018: case 1019:
+    case 1020: case 1021: case 1022: case 1023: case 1024: case 1025: case 1026: case 1027: case 1028: case 1029:
+    case 1030: case 1031: case 1032: case 1033: case 1034: case 1035: case 1036: case 1037: case 1038: case 1039:
+    case 1040: case 1041: case 1042: case 1043: case 1044: case 1045: case 1046: case 1047: case 1048: case 1049:
+    case 1050: case 1051: case 1052: case 1053: case 1054: case 1055: case 1056: case 1057: case 1058: case 1059:
+    case 1060: case 1061: case 1062: case 1063: case 1064: case 1065: case 1066: case 1067: case 1068: case 1069:
+    case 1070: case 1071: case 1072: case 1073: case 1074: case 1075: case 1076: case 1077: case 1078: case 1079:
+    case 1080: case 1081: case 1082: case 1083: case 1084: case 1085: case 1086: case 1087: case 1088: case 1089:
+    case 1090: case 1091: case 1092: case 1093: case 1094: case 1095: case 1096: case 1097: case 1098:
+        m_pSynth->setSoundParam((int)id - 1000, val, 0);
+        if (id == 1002 || id == 1003 || id == 1072) setPitchTuneLED((int)id, val);
+        else if (id == 1091) setOscPhaseLED(1091, val);
+        break;
+    case 3:
+    case 5:
+        {
+        CSoundData* pSound = m_pSynth->getCurrentSound();
+        m_bProgSelect = (id == 3);
+        POINT pt;
+        pt.x = (short)lParam;
+        pt.y = val >> 16;
+        ClientToScreenControl(m_hWnd, &pt);
+        CSoundSelectWin* pWin = &m_soundSelWin;
+        pWin->init(&m_pSynth->m_soundLib, pSound->m_progNo, pSound->m_bankNo, pSound->m_path, m_bProgSelect, &pt);
+        int w, h;
+        pWin->calcWindowSize(0, pSound->m_bankNo, &w, &h);
+        RECT rc;
+        GetWindowRectControl(m_hWnd, &rc);
+        int x = (rc.left + rc.right) / 2 - w / 2;
+        int y = (rc.top + rc.bottom) / 2 - h / 2;
+        pWin->create(m_hWnd, x, y, w, h, this);
+        }
+        break;
+    case 15:
+        {
+        if (GetKeyState(0x10) < 0) {
+            m_pSynth->startMidiLearning();
+            return;
+        }
+        COptionDlg* pDlg = new COptionDlg();
+        int ret = pDlg->open((HINSTANCE)m_hWnd, (LPCSTR)IDD_OPTION, (HWND)m_pSynth);
+        delete pDlg;
+        if (ret == 0) return;
+        int panel = getIniInt("panelcolor", 0x87c8c8);
+        int text = getIniInt("textcolor", 0x3c3c3c);
+        if (text < 0) text = 0x3c3c3c;
+        if (panel < 0) panel = 0x87c8c8;
+        if (getIniInt("coordinatesscale", 150) != m_coordScale || panel != (int)m_colPanel || text != (int)m_colText) {
+            freeBitmapCache();
+            constructPanel(m_hWnd);
+            m_guis.drawAll();
+            drawAllParams();
+            drawVoiceStatus();
+            InvalidateRectControl(m_hWnd, NULL, 0);
+        }
+        m_guis.changedSliderType();
+        }
+        break;
+    case 94:
+        {
+        CSoundSaveDlg* pDlg = new CSoundSaveDlg();
+        g_pWPI = pDlg->getWPI();
+        int ret = pDlg->open((HINSTANCE)m_hWnd, (LPCSTR)IDD_SAVESOUND, (HWND)m_pSynth);
+        WriteProgramInfo wpi = *pDlg->getWPI();
+        delete pDlg;
+        if (ret == 0) return;
+        int bankNo = wpi.bankNo;
+        int progNo = wpi.progNo;
+        char str[256];
+        char msg[256 + 1024];
+        int len = strlen(CSoundLibrary::getBank(bankNo, NULL)->m_path);
+        if (len == 0) {
+            sprintf(str, "The folder path of the Bank%02d is not specified.\nPlease try again after set the folder path in OPT dialog.", bankNo);
+            MessageBox(m_hWnd, str, "Write Error", 1);
+        } else if (m_pSynth->writeProgram(&wpi) == 1) {
+            drawCommonPartByParamID(251);
+            drawCommonPartByParamID(252);
+            PostMessageControl(m_hWnd, 0x722, 0, 0);
+        } else {
+            CSoundLibrary::getBank(bankNo, NULL)->getProgPath(progNo, str);
+            sprintf(msg, "The patch file cannot be written.\n%s\nCheck bank%02d folder path setting.", str, bankNo);
+            MessageBox(m_hWnd, msg, "Write Error", 1);
+        }
+        }
+        break;
+    case 300:
+        {
+        m_pSynth->loadProgram(0);
+        CGuiParts* pGui;
+        if (m_bProgSelect) pGui = m_guis.getGui(3);
+        else pGui = m_guis.getGui(5);
+        if (pGui) {
+            POINT pt;
+            pt.x = (pGui->m_rc.left + pGui->m_rc.right) / 2;
+            pt.y = (pGui->m_rc.top + pGui->m_rc.bottom) / 2;
+            ClientToScreenControl(m_hWnd, &pt);
+            SetCursorPos(pt.x, pt.y);
+        }
+        }
+        break;
+    case 1252:
+    case 1254:
+        m_pSynth->setCommonParam((int)id - 1000, val, 0);
+        if (id == 1252) m_pSynth->loadProgram(0);
+        break;
+    }
+}
+
+void CSynthWin::setPitchTuneLED(int id, int val)
+{
+    CLED* pLED;
+    if (id == 1002) {
+        pLED = (CLED*)m_guis.getGui(17);
+        if (pLED == NULL) return;
+        BOOL bOn = pLED->m_bOn;
+        switch (val) {
+        case 0: case 13: case 26: case 39: case 51: case 64:
+        case 77: case 89: case 102: case 115: case 127:
+            if (bOn != TRUE) pLED->setState(TRUE);
+            break;
+        default:
+            if (bOn == TRUE) pLED->setState(FALSE);
+            break;
+        }
+    } else if (id == 1003) {
+        pLED = (CLED*)m_guis.getGui(19);
+        if (pLED == NULL) return;
+        if (val >= 62 && val <= 66) {
+            if (pLED->m_bOn != TRUE) pLED->setState(TRUE);
+        } else {
+            if (pLED->m_bOn == TRUE) pLED->setState(FALSE);
+        }
+    } else if (id == 1072) {
+        pLED = (CLED*)m_guis.getGui(29);
+        if (pLED == NULL) return;
+        if (val >= 62 && val <= 66) {
+            if (pLED->m_bOn != TRUE) pLED->setState(TRUE);
+        } else {
+            if (pLED->m_bOn == TRUE) pLED->setState(FALSE);
+        }
+    }
+}
+
+void CSynthWin::setOscPhaseLED(int id, int val)
+{
+    if (id != 1091) return;
+    CLED* pLED = (CLED*)m_guis.getGui(0x1e);
+    CLED* pLED2 = (CLED*)m_guis.getGui(0x5a);
+    if (pLED == NULL) return;
+    if (val < 1) {
+        if (pLED->m_bOn == 0) return;
+        pLED->setState(0);
+        if (pLED2) pLED2->setState(0);
+    } else {
+        if (pLED->m_bOn != 0) return;
+        pLED->setState(1);
+        if (pLED2) pLED2->setState(1);
+    }
+}
+
+void CSynthWin::drawVoiceStatus()
+{
+    int colors[32];
+    int* pStatus = m_pSynth->m_voiceCtl.getVoicesStatus();
+    for (int i = 0; i < 32; i++) {
+        switch (pStatus[i]) {
+        case 0: colors[i] = m_colPanel; break;
+        case 1: colors[i] = 0xffffff; break;
+        case 2: colors[i] = 0xa8a8a8; break;
+        case 3: colors[i] = 0; break;
+        }
+    }
+    CLEDMatrix* pMatrix = (CLEDMatrix*)m_guis.getGui(0x68);
+    if (pMatrix) pMatrix->setColors(colors);
+}
+
+void CSynthWin::onUser_PROGRAM_CHANGED(WPARAM wParam, LPARAM lParam)
+{
+    CSoundData* pSound = (CSoundData*)lParam;
+    int id, val;
+    for (int i = 0; i < pSound->getParamsNum(); i++) {
+        pSound->enumParam(i, &id, &val);
+        onUser_SOUNDPARAM_CHANGED(id, val);
+    }
+    drawCommonPartByParamID(251);
+    drawCommonPartByParamID(252);
+}
+
+void CSynthWin::onUser_SOUNDPARAM_CHANGED(WPARAM wParam, LPARAM lParam)
+{
+    int id = (int)wParam;
+    int val = (int)lParam;
+    int guiID = id + 1000;
+    m_guis.setValue(guiID, val);
+    if (id == 2 || id == 3 || id == 91 || id == 72) {
+        if (id != 91) setPitchTuneLED(guiID, val);
+        else setOscPhaseLED(guiID, val);
+    } else if (id == 251 || id == 252) {
+        drawCommonPartByParamID(id);
+    }
+}
+
+void CSynthWin::onUser_REDRAW_STATUS(WPARAM wParam, LPARAM lParam)
+{
+    drawVoiceStatus();
+}
+
+LRESULT CSynthWin::myWndProc(HWND hWnd, int msg, WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) {
+    case WM_CREATE:
+        onCreate(hWnd, (CSynthesizer1*)m_lpParam);
+        SizeView(hWnd, m_coordScale * 466 / 100, m_coordScale * 340 / 100);
+        return 0;
+    case WM_PAINT:
+        {
+            PAINTSTRUCT ps;
+            ps.rcPaint = *(RECT*)wParam;
+            HDC hdc = (HDC)lParam;
+            if (hdc) {
+                paint(hWnd, hdc, &ps.rcPaint);
+            } else {
+                BeginPaint(hWnd, &ps);
+                EndPaint(hWnd, &ps);
+            }
+        }
+        return 0;
+    case WM_CLOSE:
+        m_pSynth->endMidiLearning();
+        break;
+    case 0x0014:    // WM_ERASEBKGND
+        return 0;
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+        if (m_soundSelWin.m_hWnd) {
+            m_soundSelWin.Destroy();
+            return 0;
+        }
+        // fall through
+    case WM_MOUSEMOVE:
+    case WM_LBUTTONUP:
+    case 0x0203:    // WM_LBUTTONDBLCLK
+    case WM_MOUSEWHEEL:
+        if (m_guis.processMouseMessage(msg, lParam) == 0) defaultProc(hWnd, msg, wParam, lParam);
+        return 0;
+    case 0x709:
+        {
+            onUser_GUIPARTS(wParam, lParam);
+            DWORD id = wParam - 1000;
+            if (id < 99) sendParamChangedNotify2Host(m_pAU, id);
+            else if (id == 254) sendParamChangedNotify2Host(m_pAU, 0);
+        }
+        return 0;
+    case 0x720:
+        onUser_SOUNDPARAM_CHANGED(wParam, lParam);
+        return 0;
+    case 0x721:
+        onUser_PROGRAM_CHANGED((WPARAM)hWnd, lParam);
+        if ((int)wParam == 0) PostMessage(m_hWnd, 0x722, 0, 0);
+        return 0;
+    case 0x722:
+        if (m_pSynth->getCurrentSound() == NULL) return 0;
+        AudioUnitSetParameter((AudioUnit)m_pAU, 0, kAudioUnitScope_Global, 0, 0.000123f, 0);
+        sendParamChangedNotify2Host(m_pAU, 0);
+        return 0;
+    case 0x723:
+        drawVoiceStatus();
+        return 0;
+    case 0x8002:
+        m_soundSelWin.Destroy();
+        return 0;
+    case 0x8003:
+        for (int i = 0; i < 255; i++) {
+            if (m_pSynth->m_bParamChanged[i]) {
+                m_pSynth->m_bParamChanged[i] = 0;
+                int guiID = i + 1000;
+                if (i < 99) drawPartByParamID(i);
+                else if (guiID >= 1251 && guiID <= 1254) drawCommonPartByParamID(i);
+            }
+        }
+        return 0;
+    }
+    return defaultProc(hWnd, msg, wParam, lParam);
+}
+
+/**
+ * @brief Tells the host (and other listeners) that a parameter was edited from the GUI.
+ *
+ * Sends a begin gesture, a value change and an end gesture event for the parameter
+ * through AUEventListenerNotify().
+ *
+ * @param pAU   AudioUnit that owns the parameter.
+ * @param id    Parameter id in the global scope (0 is also used for whole-state changes).
+ */
+static void sendParamChangedNotify2Host(void* pAU, int id)
+{
+    AudioUnitEvent event;
+    memset(&event, 0, sizeof(event));
+    event.mArgument.mParameter.mAudioUnit = (AudioUnit)pAU;
+    event.mArgument.mParameter.mScope = kAudioUnitScope_Global;
+    event.mArgument.mParameter.mElement = 0;
+    event.mArgument.mParameter.mParameterID = id;
+    event.mEventType = kAudioUnitEvent_BeginParameterChangeGesture;
+    AUEventListenerNotify(NULL, NULL, &event);
+    event.mEventType = kAudioUnitEvent_ParameterValueChange;
+    AUEventListenerNotify(NULL, NULL, &event);
+    event.mEventType = kAudioUnitEvent_EndParameterChangeGesture;
+    AUEventListenerNotify(NULL, NULL, &event);
+}
+
+void CSynthWin::drawPartByParamID(int id)
+{
+    int val = m_pSynth->getCurrentSound()->getParamVal(id);
+    onUser_SOUNDPARAM_CHANGED(id, val);
+}
+
+int CSynthWin::convertVal(char* str, int id, int val, void* pSynth)
+{
+    CSynthesizer1* pSyn = (CSynthesizer1*)pSynth;
+    double v;
+    float f;
+    switch (id) {
+    case 1083:
+        f = 0.0f;
+        if (val != 64) {
+            f = fabsf((float)((val - 64) / 63.0));
+            if (f > 1.0f) f = 1.0f;
+            f = (float)(fpow(1000.0, f) * 0.0001);
+            if (val < 64) f = -f;
+        }
+        if (f < 0.0f) sprintf(str, "0.0 : %.1f msec", f * -1000.0f);
+        else sprintf(str, "%.1f : 0.0 msec", f * 1000.0f);
+        return 1;
+    case 1037:
+        {
+            float a, b;
+            if (!(val < 65)) {
+                a = 1.0f;
+                b = (127 - val) / 63.0f;
+            } else {
+                a = (val - 1) / 63.0f;
+                if (val == 0) a = 0.0f;
+                b = 1.0f;
+            }
+            sprintf(str, "%.0f%%", a / (b + a) * 100.0);
+        }
+        return 1;
+    case 1050:
+    case 1051:
+        sprintf(str, "%.0f%%", (float)(val - (val < 64 ? 63 : 64)) / 63.0f * 100.0f);
+        return 1;
+    case 1061:
+        f = (float)(fpow(320.0, (float)val / 127.0) * 50.0);
+        if (f < 1000.0f) sprintf(str, "%.1f Hz", f);
+        else sprintf(str, "%.1f KHz", f / 1000.0f);
+        return 1;
+    case 1062:
+        sprintf(str, "%.1f db", (float)(val - 64) / 127.0f * 50.0f);
+        return 1;
+    case 1090:
+        f = (val - 64) / (val > 64 ? 63.0f : 64.0f);
+        if (f == 0.0f) {
+            strcpy(str, "center");
+            return 1;
+        }
+        if (f > 0.0f) sprintf(str, "R %.0f%%", f * 100.0f);
+        else sprintf(str, "L %.0f%%", f * -100.0f);
+        return 1;
+    case 1052:
+        v = (float)val / 127.0;
+        if (v >= 0.5) v = v * 30.0;
+        else v = fpow(300.0, pow(v + v, 0.6)) * 0.05;
+        sprintf(str, "%.2f msec", (float)(v / 1000.0) * 1000.0f);
+        return 1;
+    case 1054:
+        if (val == 0) f = 0.01f;
+        else f = (float)(fpow(20000.0, (float)val / 127.0f) * 0.02);
+        sprintf(str, "%.2f Hz", f);
+        return 1;
+    case 1055:
+        sprintf(str, "%.0f %%", (float)(val - 64) * 0.015625f * 0.99f * 100.0f);
+        return 1;
+    case 1003:  // osc2 fine tune
+    case 1072:  // osc1 detune
+        sprintf(str, "%s%.2d cent", val > 66 ? "+" : "", val < 62 ? val - 62 : (val > 66 ? val - 66 : 0));
+        return 1;
+    case 1002:  // osc2 pitch
+        {
+            int n = val * 120 / 127 - 60;
+            sprintf(str, "%s%.2d", n > 0 ? "+" : "", n);
+        }
+        return 1;
+    case 1011:
+        sprintf(str, "%s%.2d", val > 64 ? "+" : "", val - 64);
+        return 1;
+    case 1085:
+        {
+            int n = val - 24;
+            sprintf(str, "%s%.2d", n > 0 ? "+" : "", n);
+        }
+        return 1;
+    case 1005:  // osc mix
+        {
+            int n = (int)(((float)val / -127.0 + 1.0) * 100.0 + 0.5);
+            sprintf(str, "%d : %d", n, 100 - n);
+        }
+        return 1;
+    case 1021:
+        sprintf(str, "%d", val - 63);
+        return 1;
+    case 1033:
+        strcpy(str, g_arpString[val]);
+        return 1;
+    case 1035:
+        strcpy(str, g_delayString[val]);
+        return 1;
+    case 1043:
+        if (pSyn->isLFOTempoSync(0) == 0) goto none;
+        strcpy(str, g_nLFOTimeString[(int)((long)val * 30 >> 7)]);  // 0..127 -> 0..29
+        return 1;
+    case 1048:
+        if (pSyn->isLFOTempoSync(1) == 0) goto none;
+        strcpy(str, g_nLFOTimeString[(int)((long)val * 30 >> 7)]);  // 0..127 -> 0..29
+        return 1;
+    case 1084:
+        sprintf(str, "%d", val - 64);
+        return 1;
+    default:
+    none:
+        *str = '\0';
+        return 0;
+    }
+}
+
+void CSynthWin::drawCommonPartByParamID(int id)
+{
+    char str[256];
+    CLabel* pLabel;
+    CSoundData* pSound = m_pSynth->getCurrentSound();
+    if (id == 251) {
+        CBank* pBank = CSoundLibrary::getBank(pSound->m_bankNo, pSound->m_path);
+        if (pBank == NULL) strcpy(str, "Ext:not found");
+        else if (pSound->m_bankNo != -1) sprintf(str, "%02d:%s  ", pSound->m_bankNo, pBank->m_name);
+        else sprintf(str, "Ext:%s  ", pBank->m_name);
+        pLabel = (CLabel*)m_guis.getGui(5);
+        if (pLabel) pLabel->setText(str);
+    } else if (id == 252) {
+        m_guis.setValue(1252, pSound->m_progNo);
+        const char* name = GetEncodedString(pSound->m_name);
+        sprintf(str, "%d:%s  ", pSound->m_progNo + 1, name);
+        pLabel = (CLabel*)m_guis.getGui(3);
+        if (pLabel) pLabel->setText(str);
+    } else if (id == 254) {
+        m_guis.setValue(1254, m_pSynth->m_volumeVal);
+    }
+}
+
+int CSynthWin::isMidiLearnEndParts(int id)
+{
+    switch (id) {
+    case 3:
+    case 5:
+    case 15:
+    case 93:
+    case 94:
+    case 1094:
+    case 1252:
+    case 1254:
+        return 1;
+    }
+    return 0;
+}
+
+CSynthWin* CreateSynWin(HWND hWnd, void* pSynth, void* pAU)
+{
+    CSynthWin* pWin = new CSynthWin(pAU);
+    pWin->onCreate(hWnd, (CSynthesizer1*)pSynth);
+    ((CSynthesizer1*)pSynth)->m_hNotifyWnd = hWnd;
+    return pWin;
+}
+
+void DestroySynWin(void* p)
+{
+    CSynthWin* pWin = (CSynthWin*)p;
+    pWin->myWndProc(pWin->m_hWnd, WM_CLOSE, 0, 0);
+    pWin->changeWindowHandle(NULL);
+    pWin->m_pSynth->m_hNotifyWnd = NULL;
+    pWin->m_hWnd = NULL;
+    delete pWin;
+}
+
+int GetPanelScale()
+{
+    return getIniInt("coordinatesscale", 150);
+}

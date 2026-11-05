@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AudioComponents</key>
+	<array>
+		<dict>
+			<key>description</key>
+			<string>Audio Unit Instrument(Synth1)</string>
+			<key>factoryFunction</key>
+			<string>Synth1Factory</string>
+			<key>manufacturer</key>
+			<string>daiC</string>
+			<key>name</key>
+			<string>Daichi Laboratory: Synth1</string>
+			<key>sandboxSafe</key>
+			<true/>
+			<key>subtype</key>
+			<string>Syn1</string>
+			<key>type</key>
+			<string>aumu</string>
+			<key>version</key>
+			<integer>65536</integer>
+		</dict>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>jp.daichi.synth1.audiounit</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleSignature</key>
+	<string>Syn1</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CSResourcesFileMapped</key>
+	<true/>
+</dict>
+</plist>

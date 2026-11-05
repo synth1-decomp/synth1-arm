@@ -1,0 +1,13 @@
+# Golden render hashes for tests/au/au_tests.c (scenario  FNV-1a-64 of the interleaved
+# little-endian float32 L/R output  peak).
+# Generated from the ORIGINAL release binary (Synth1.component from Synth1macau113beta11.zip)
+# on macOS 10.13.6 (x86_64), each scenario in a fresh process after restoring default_state.plist
+# (the ClassInfo of a fresh instance of the original, i.e. the "initial sound"),
+# with no jp.daichi.synth1 preferences (default CC map). The rebuilt component is byte-identical,
+# so it must reproduce these exactly.
+init_note_44k    bf234a9d853289eb  0.289317
+init_chord_44k   f4bca06943bd458b  0.700959
+filter_bend_44k  540dfa32330365f5  0.212565
+unison_fx_48k    01537bc431d92885  0.857190
+arp_lfo_44k      ab74e74b77e316b6  0.356343
+midi_cc_96k      ff2e3871bc163684  0.342546
