@@ -1,0 +1,12 @@
+// Version of the modern build (Synth1.xcodeproj); the one place to change it.
+//
+// Both project configurations (Debug and Release) use this file. scripts/generate_version_header.sh turns
+// these settings into synth1_version.h for the code and the Audio Unit version, and the Info.plist files use
+// MARKETING_VERSION and CURRENT_PROJECT_VERSION. MINOR and BUGFIX must be 0-255, MAJOR 0-65535.
+
+SYNTH1_VERSION_MAJOR = 1
+SYNTH1_VERSION_MINOR = 14
+SYNTH1_VERSION_BUGFIX = 0
+
+MARKETING_VERSION = $(SYNTH1_VERSION_MAJOR).$(SYNTH1_VERSION_MINOR).$(SYNTH1_VERSION_BUGFIX)
+CURRENT_PROJECT_VERSION = $(MARKETING_VERSION)

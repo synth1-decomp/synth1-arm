@@ -1511,6 +1511,12 @@
 			path = LED_RED_ON.png;
 			sourceTree = "<group>";
 		};
+		345F0EF77ED88A421DDA9FA6 = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.xcconfig;
+			path = Version.xcconfig;
+			sourceTree = "<group>";
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1622,6 +1628,7 @@
 		4EAE695AD1F489F78EA3E1C6 = {
 			isa = PBXGroup;
 			children = (
+				345F0EF77ED88A421DDA9FA6,
 				A13142DCFA8488A3B23F853C,
 				3C040F3BD4A4975E8E8DDAFA,
 				CF76C9CB04C34E962FCC0763,
@@ -1767,6 +1774,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2B92EFAD88C3D0C56E7AD210;
 			buildPhases = (
+				08CA1F065BC69D516BF5CED2,
 				F9711F64E00F4F07DEA0BF62,
 				B7D40BDAADA0FB556E7F551D,
 				A1E83127449245E64C3C9A34,
@@ -1864,6 +1872,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		08CA1F065BC69D516BF5CED2 = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate version header";
+			outputPaths = (
+				"$(PROJECT_DERIVED_FILE_DIR)/synth1_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/../scripts/generate_version_header.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0C95D0D4DE6A3E5D86063A6D = {
@@ -2034,6 +2061,7 @@
 /* Begin XCBuildConfiguration section */
 		1C07FA114C3B1BFB6219D6F4 = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 345F0EF77ED88A421DDA9FA6;
 			buildSettings = {
 				SDKROOT = macosx;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
@@ -2042,6 +2070,7 @@
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					USE_FILE32API,
 					SYNTH1_MODERN_BUILD,
+					SYNTH1_DEBUG_BUILD,
 				);
 				HEADER_SEARCH_PATHS = (
 					"$(SRCROOT)/audiounit",
@@ -2053,6 +2082,7 @@
 					"$(SRCROOT)/techpop",
 					"$(SRCROOT)/zlib125/zlib-1.2.5",
 					"$(SRCROOT)/zlib125/zlib-1.2.5/contrib/minizip",
+					"$(PROJECT_DERIVED_FILE_DIR)",
 				);
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				CODE_SIGN_IDENTITY = "-";
@@ -2069,7 +2099,7 @@
 			buildSettings = {
 				PRODUCT_NAME = Synth1CocoaViewFactory;
 				WRAPPER_EXTENSION = bundle;
-				INFOPLIST_FILE = "audiounit/Synth1CocoaViewFactory-Info.plist";
+				INFOPLIST_FILE = "audiounit/Synth1CocoaViewFactory-Modern-Info.plist";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					SYNTH1_VIEWFACTORY,
@@ -2084,7 +2114,7 @@
 			buildSettings = {
 				PRODUCT_NAME = Synth1CocoaViewFactory;
 				WRAPPER_EXTENSION = bundle;
-				INFOPLIST_FILE = "audiounit/Synth1CocoaViewFactory-Info.plist";
+				INFOPLIST_FILE = "audiounit/Synth1CocoaViewFactory-Modern-Info.plist";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					SYNTH1_VIEWFACTORY,
@@ -2099,12 +2129,14 @@
 			buildSettings = {
 				PRODUCT_NAME = Synth1;
 				WRAPPER_EXTENSION = component;
-				INFOPLIST_FILE = "audiounit/Synth1-Info.plist";
+				INFOPLIST_FILE = "audiounit/Synth1-Modern-Info.plist";
 				EXPORTED_SYMBOLS_FILE = audiounit/Synth1.exp;
 				GENERATE_PKGINFO_FILE = YES;
 				INSTALL_PATH = "$(HOME)/Library/Audio/Plug-Ins/Components";
 				COPY_PHASE_STRIP = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.daichi.synth1.audiounit;
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREFIX_HEADER = "$(PROJECT_DERIVED_FILE_DIR)/synth1_version.h";
 			};
 			name = Debug;
 		};
@@ -2113,17 +2145,20 @@
 			buildSettings = {
 				PRODUCT_NAME = Synth1;
 				WRAPPER_EXTENSION = component;
-				INFOPLIST_FILE = "audiounit/Synth1-Info.plist";
+				INFOPLIST_FILE = "audiounit/Synth1-Modern-Info.plist";
 				EXPORTED_SYMBOLS_FILE = audiounit/Synth1.exp;
 				GENERATE_PKGINFO_FILE = YES;
 				INSTALL_PATH = "$(HOME)/Library/Audio/Plug-Ins/Components";
 				COPY_PHASE_STRIP = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = jp.daichi.synth1.audiounit;
+				INFOPLIST_PREPROCESS = YES;
+				INFOPLIST_PREFIX_HEADER = "$(PROJECT_DERIVED_FILE_DIR)/synth1_version.h";
 			};
 			name = Release;
 		};
 		EACC89DFBDBC23F92C301936 = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 345F0EF77ED88A421DDA9FA6;
 			buildSettings = {
 				SDKROOT = macosx;
 				MACOSX_DEPLOYMENT_TARGET = 12.0;
@@ -2143,6 +2178,7 @@
 					"$(SRCROOT)/techpop",
 					"$(SRCROOT)/zlib125/zlib-1.2.5",
 					"$(SRCROOT)/zlib125/zlib-1.2.5/contrib/minizip",
+					"$(PROJECT_DERIVED_FILE_DIR)",
 				);
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				CODE_SIGN_IDENTITY = "-";
