@@ -21,6 +21,16 @@
 #import "SynView_au.h"
 #endif
 
+#ifdef SYNTH1_MODERN_BUILD
+// Still exported by HIToolbox, but no longer declared in the SDK's headers
+extern OSStatus CreateStandardAlert(AlertType alertType, CFStringRef error, CFStringRef explanation,
+                                    const AlertStdCFStringAlertParamRec *param, DialogRef *outAlert);
+extern OSStatus RunStandardAlert(DialogRef inAlert, ModalFilterUPP filterProc, DialogItemIndex *outItemHit);
+extern OSStatus SetUserFocusWindow(WindowRef inWindow);
+// Defined below, after its first use
+int GetWindowRect(HWND hWnd, RECT* rc);
+#endif
+
 #ifdef SYNTH1_VIEWFACTORY
 
 static HWND g_hCaptureWnd;  // (separate from the global of the same name in winemu_au.cpp)
