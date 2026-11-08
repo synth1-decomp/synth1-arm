@@ -37,6 +37,9 @@ typedef struct tagSIG_LR{
 
 #ifdef __cplusplus
 #include <math.h>
+#ifdef SYNTH1_MODERN_BUILD
+#include "../compat/double_math.h"
+#endif
 
 #ifndef FTOI_DEFINED
 #define FTOI_DEFINED

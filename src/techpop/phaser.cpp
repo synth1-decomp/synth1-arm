@@ -4,6 +4,9 @@
  */
 
 #include <math.h>
+#ifdef SYNTH1_MODERN_BUILD
+#include "../compat/double_math.h"
+#endif
 #include <string.h>
 #include "phaser.h"
 
