@@ -321,10 +321,14 @@ int CLFO::getSameValAndTimeMain(int* pTime, int time)
             float* pTable = getWaveTablePointerSize(0, 0.0f);
             unsigned int idx = (unsigned int)(time << 11) / cycle;
             fval = (min + max) + (max - min) * pTable[idx];
+#if defined(__aarch64__)
+            ival = ftoi(fval);
+#else
             __asm {
                 fld fval
                 fistp ival
             }
+#endif
             val = ival / 2;
             next = time + (m_minStep - time % m_minStep);
         }

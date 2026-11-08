@@ -7,7 +7,11 @@
  */
 #include <string.h>
 #include <strings.h>
+#if defined(__aarch64__)
+#include "../compat/sse_neon.h"
+#else
 #include <xmmintrin.h>
+#endif
 #include "common.h"
 #include "ssechk.h"
 #include "sigdev.h"

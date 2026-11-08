@@ -3,7 +3,11 @@
  * @brief Mixer device (CMixDevice): mono sum of the inputs and panned stereo mix of the voices.
  */
 #include <string.h>
+#if defined(__aarch64__)
+#include "../compat/sse_neon.h"
+#else
 #include <xmmintrin.h>
+#endif
 #include "common.h"
 #include "mixdev.h"
 

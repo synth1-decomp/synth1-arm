@@ -7,7 +7,11 @@
  */
 
 #include <math.h>
+#if defined(__aarch64__)
+#include "../compat/sse_neon.h"
+#else
 #include <xmmintrin.h>
+#endif
 #include "vca.h"
 #include "vcf.h"
 #include "vco.h"

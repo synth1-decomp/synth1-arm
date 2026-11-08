@@ -7,7 +7,11 @@
  * arguments so that every combination gets its own branch-free loop.
  * The variants are declared in vco.h and called from CVco::createWaveMain().
  */
+#if defined(__aarch64__)
+#include "../compat/sse_neon.h"
+#else
 #include <emmintrin.h>
+#endif
 #include "common.h"
 #include "vco.h"
 

@@ -14,12 +14,16 @@
  */
 static inline int floatToInt(const float& f)
 {
+#if defined(__aarch64__)
+    return ftoi(f);
+#else
     int n;
     __asm {
         fld f
         fistp n
     }
     return n;
+#endif
 }
 
 CDecimator::CDecimator()
