@@ -21,6 +21,13 @@
 #import "SynView_au.h"
 #endif
 
+#ifdef SYNTH1_MODERN_BUILD
+// Still exported by HIToolbox, but no longer declared in the SDK's headers
+extern OSStatus SetUserFocusWindow(WindowRef inWindow);
+// Defined below, after its first use
+int GetWindowRect(HWND hWnd, RECT* rc);
+#endif
+
 #ifdef SYNTH1_VIEWFACTORY
 
 static HWND g_hCaptureWnd;  // (separate from the global of the same name in winemu_au.cpp)
@@ -505,6 +512,29 @@ int ModalDialogMac(HINSTANCE hInst, const char* name, HWND hParent)
 
 #endif // SYNTH1_VIEWFACTORY
 
+#ifdef SYNTH1_MODERN_BUILD
+// The original Carbon alert (#else branch) never gets focus inside a Cocoa host.
+// Its modal loop then waits forever and hangs the host.
+int MessageBox(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
+{
+    __block int result = 0;
+    void (^show)(void) = ^{
+        NSString* caption = lpCaption ? [NSString stringWithUTF8String:lpCaption] : nil;
+        NSString* text = lpText ? [NSString stringWithUTF8String:lpText] : nil;
+        NSAlert* alert = [[NSAlert alloc] init];
+        [alert setMessageText:caption ? caption : @""];
+        [alert setInformativeText:text ? text : @""];
+        [alert addButtonWithTitle:@"OK"];
+        if (uType & MB_YESNO) [alert addButtonWithTitle:@"Cancel"];
+        result = [alert runModal] != NSAlertFirstButtonReturn;
+        [alert release];
+    };
+    // AppKit alerts must run on the main thread
+    if ([NSThread isMainThread]) show();
+    else dispatch_sync(dispatch_get_main_queue(), show);
+    return result;
+}
+#else
 // Each button layout is a complete block of its own (the shared tail is merged only
 // by the machine tail merger, from RunStandardAlert on).
 int MessageBox(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
@@ -549,6 +579,7 @@ int MessageBox(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType)
         return itemHit != kAlertStdAlertOKButton;
     }
 }
+#endif
 
 #ifdef SYNTH1_VIEWFACTORY
 

@@ -22,6 +22,10 @@
 struct CCWindow;
 BOOL    SendMessage0(struct CCWindow *pWnd, void *hWnd, unsigned int msg, unsigned long wParam, unsigned long lParam);
 void    SetWindow(void *pWnd, void *hWnd);
+#ifdef SYNTH1_MODERN_BUILD
+// Current compilers reject implicit declarations, and int-returning ones would truncate pointers
+void    *GetCapture(int *pbControl);
+#endif
 
 #define WM_CREATE           0x0001
 #define WM_CLOSE            0x0010

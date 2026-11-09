@@ -16,6 +16,15 @@
 #import <Cocoa/Cocoa.h>
 #import "SynWindow.h"
 
+#ifdef SYNTH1_MODERN_BUILD
+// Current compilers reject implicit declarations; these match windef.h and techpop/common.h
+int     SendMessage0(void *pWnd, void *hWnd, unsigned int msg, unsigned long wParam, unsigned long lParam);
+void    ReleaseCapture(void);
+int     MessageBox(void *hWnd, const char *lpText, const char *lpCaption, unsigned int uType);
+int     isExistFile(const char *path, int bDir);
+void    setIniInt(const char *key, int val);
+#endif
+
 #define WM_CREATE           0x0001
 
 #define CCMAP_NUM           128
@@ -64,7 +73,12 @@ static inline double fpow(double a, double b)
 - (id)initView:(void*)synthWin
 {
     NSRect rect = [[self contentView] bounds];
+#ifdef SYNTH1_MODERN_BUILD
+    // The original call (#else branch) passes one argument too many, which a prototype rejects
+    SendMessage0(synthWin, [self windowRef], WM_CREATE - 1, 0, 0);
+#else
     SendMessage0(synthWin, [self windowRef], WM_CREATE - 1, 0, rect.size.width, rect.size.height);
+#endif
 }
 
 /**

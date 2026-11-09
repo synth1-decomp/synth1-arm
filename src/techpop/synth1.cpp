@@ -40,6 +40,10 @@ CSynthesizer1::CSynthesizer1()
     edPrintf("synth1() constructor a \n");
 
     m_pSynWin = NULL;
+#ifdef SYNTH1_MODERN_BUILD
+    // The original never sets this, so SetParameter() can post to a garbage pointer and crash the host
+    m_hNotifyWnd = NULL;
+#endif
 
     // voices -> mixer -> effector -> eq -> tone -> pan -> delay -> chorus
     m_mixer.setChannelNum(32);

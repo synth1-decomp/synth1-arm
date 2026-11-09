@@ -37,6 +37,9 @@ typedef struct tagSIG_LR{
 
 #ifdef __cplusplus
 #include <math.h>
+#ifdef SYNTH1_MODERN_BUILD
+#include "../compat/double_math.h"
+#endif
 
 #ifndef FTOI_DEFINED
 #define FTOI_DEFINED
@@ -51,9 +54,15 @@ typedef struct tagSIG_LR{
  */
 inline int ftoi(float f)
 {
+#if defined(__aarch64__)
+    // fistp stores INT_MIN for NaN and for values that don't fit; a NEON conversion would saturate
+    float r = __builtin_rintf(f);
+    return (r >= -2147483648.0f && r < 2147483648.0f) ? (int)r : (-2147483647 - 1);
+#else
     int i;
     __asm__ __volatile__ ("fistpl %0" : "=m" (i) : "t" (f) : "st");
     return i;
+#endif
 }
 #endif
 
