@@ -88,25 +88,56 @@ jobs:
       - name: Run auval tests
         run: scripts/run_auval_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
 
-  # Upload artifacts
-  publish:
+  # Build installers and publish them to a GitHub release tagged '<version>-<commit>'
+  release:
     if: github.event_name == 'push'
     needs: validate
-    strategy:
-      matrix:
-        config: [Debug, Release]
-    name: Publish ${{ matrix.config }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    name: Release
+    runs-on: xcode-27
+    timeout-minutes: 10
+    permissions:
+      contents: write
     env:
-      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: build-${{ matrix.config }}
+          pattern: build-*
+          merge-multiple: true
           path: build/artifacts
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Synth1-${{ matrix.config }}
-          path: ${{ env.ZIP }}
-          retention-days: 30
+      - name: Unpack
+        run: |
+          for config in Debug Release; do
+            mkdir -p build/modern/Build/Products/$config
+            ditto -x -k build/artifacts/Synth1-$config.zip build/modern/Build/Products/$config
+          done
+      - name: Read the version
+        run: |
+          root=$PWD
+          source scripts/version.sh
+          if [ "$(build_id)" = dev ]; then
+            echo "error: the checkout has uncommitted changes, so there's no commit ID to release"
+            exit 1
+          fi
+          echo "VERSION=$(marketing_version)-$(build_id)" >> "$GITHUB_ENV"
+      - name: Check this version isn't released yet
+        run: |
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            echo "$VERSION is already released"
+            echo "RELEASED=1" >> "$GITHUB_ENV"
+          fi
+      - name: Build the installers
+        if: env.RELEASED != '1'
+        run: |
+          scripts/build_pkg.sh --config Release
+          scripts/build_pkg.sh --config Debug
+      - name: Publish the release
+        if: env.RELEASED != '1'
+        run: |
+          gh release create "$VERSION" \
+            "build/pkg/Synth1-$VERSION-release.pkg" \
+            "build/pkg/Synth1-$VERSION-debug.pkg" \
+            --target "$GITHUB_SHA" \
+            --title "Synth1 $VERSION" \
+            --generate-notes
