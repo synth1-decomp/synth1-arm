@@ -89,6 +89,11 @@ static void fail_at(const char* file, int line, const char* fmt, ...)
 /* zero-filled heap                                                                           */
 
 /*
+ * Not in the modern build (scripts/run_au_tests.sh): it initializes m_hNotifyWnd, and patching
+ * the malloc zones crashes on current macOS.
+ */
+#ifndef SYNTH1_MODERN_BUILD
+/*
  * CSynthesizer1's constructor does not initialize m_hNotifyWnd (only the Cocoa view sets it),
  * and Synth1::SetParameter() posts a message to it when it is non-NULL. With a recycled heap
  * block the field holds garbage and SetParameter() crashes in PostEventMac (seen on the VM:
@@ -132,6 +137,7 @@ static void install_zero_fill(void)
     if (malloc_get_all_zones(mach_task_self(), NULL, &zones, &n) == KERN_SUCCESS)
         for (i = 0; i < n; i++) patch_zone((malloc_zone_t*)zones[i]);
 }
+#endif
 
 /* ------------------------------------------------------------------------------------------ */
 /* AU helpers                                                                                 */
@@ -716,6 +722,7 @@ static int find_ref(const char* name, uint64_t* h)
 /* ------------------------------------------------------------------------------------------ */
 /* tests                                                                                      */
 
+#ifndef SYNTH1_MODERN_BUILD
 /** The host's heap hands out zeroed blocks, even recycled ones (see install_zero_fill()). */
 static void test_host_zero_fill(void)
 {
@@ -732,6 +739,7 @@ static void test_host_zero_fill(void)
         free(p);
     }
 }
+#endif
 
 /** The bundle loads, exports Synth1Factory and its Info.plist describes aumu/Syn1/daiC 1.0.0. */
 static void test_bundle_component(void)
@@ -763,7 +771,19 @@ static void test_bundle_component(void)
     CHECK_EQ(d.componentSubType, 'Syn1');
     CHECK_EQ(d.componentManufacturer, 'daiC');
     CHECK_OK(AudioComponentGetVersion(g_comp, &ver));
+#ifdef SYNTH1_MODERN_BUILD
+    /* The version hosts see, from Info.plist. scripts/run_au_tests.sh passes the expected one. */
+    {
+        CFNumberRef n = (CFNumberRef)CFDictionaryGetValue(c, CFSTR("version"));
+        SInt64 plistVer = -1;
+        REQUIRE(n && CFGetTypeID(n) == CFNumberGetTypeID());
+        CFNumberGetValue(n, kCFNumberSInt64Type, &plistVer);
+        CHECK_EQ(plistVer, SYNTH1_EXPECTED_AU_VERSION);
+        CHECK_EQ(ver, SYNTH1_EXPECTED_AU_VERSION);
+    }
+#else
     CHECK_EQ(ver, 0x10000);
+#endif
 }
 
 /** Open + initialize succeeds at 44.1/48/96 kHz, the rate reads back and A4 sounds at 440 Hz. */
@@ -1695,7 +1715,9 @@ static void test_golden(void)
 
 typedef struct { const char* name; void (*fn)(void); } TestCase;
 static const TestCase kTests[] = {
+#ifndef SYNTH1_MODERN_BUILD
     { "au.host_zero_fill", test_host_zero_fill },
+#endif
     { "au.bundle_component", test_bundle_component },
     { "au.open_init_rates", test_open_init_rates },
     { "au.stream_format", test_stream_format },
@@ -1736,7 +1758,11 @@ static int load_component(const char* path)
     }
     fac = (AudioComponentFactoryFunction)CFBundleGetFunctionPointerForName(g_bundle, CFSTR("Synth1Factory"));
     if (!fac) { fprintf(stderr, "Synth1Factory not found\n"); return 1; }
+#ifdef SYNTH1_MODERN_BUILD
+    g_comp = AudioComponentRegister(&d, CFSTR("Daichi Laboratory: Synth1 (test)"), SYNTH1_EXPECTED_AU_VERSION, fac);
+#else
     g_comp = AudioComponentRegister(&d, CFSTR("Daichi Laboratory: Synth1 (test)"), 0x10000, fac);
+#endif
     if (!g_comp) { fprintf(stderr, "AudioComponentRegister failed\n"); return 1; }
     g_componentPath = path;
     return 0;
@@ -1780,7 +1806,9 @@ int main(int argc, char** argv)
     uint32_t sz = sizeof g_selfPath;
     int i, nTests = (int)(sizeof kTests / sizeof kTests[0]);
     setvbuf(stdout, NULL, _IOLBF, 0);
+#ifndef SYNTH1_MODERN_BUILD
     install_zero_fill();
+#endif
     if (_NSGetExecutablePath(g_selfPath, &sz) != 0) return 2;
     if (argc >= 2 && !strcmp(argv[1], "--child")) return child_main(argc, argv);
     if (argc >= 2 && !strcmp(argv[1], "--gen")) return gen_main(argc, argv);
