@@ -2,14 +2,16 @@
  * @file au_isolation.c
  * @brief Keeps the Audio Unit tests away from the user's Synth1 settings and files.
  *
- * scripts/run_au_tests.sh links the test host against this library. Its interpose table replaces
- * these functions everywhere in the process, including in the Synth1 component loaded later:
+ * The AU test scripts load this library into the test host: inserted with DYLD_INSERT_LIBRARIES,
+ * or, from macOS 12 on, linked in. Its interpose table replaces these functions everywhere in the
+ * process, including in the Synth1 component loaded later:
  * - CFPreferencesCopyAppValue / SetAppValue / AppSynchronize for the "jp.daichi.synth1" domain
  *   use an in-memory store that starts empty, so the Audio Unit sees the default settings;
  * - FSFindFolder for the user's Documents and temporary folders returns folders inside
  *   $SYNTH1_TEST_HOME, so Synth1Patches is created there.
  * Every other call goes to the real function. Child processes get their own empty store and
- * share the folders, because they inherit SYNTH1_TEST_HOME.
+ * share the folders, because they inherit SYNTH1_TEST_HOME. An inserted library only reaches a
+ * child that is started directly: macOS drops DYLD_INSERT_LIBRARIES when it starts /bin/sh.
  */
 
 #include <CoreFoundation/CoreFoundation.h>
