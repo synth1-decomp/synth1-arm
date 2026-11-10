@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  # Run pre-build tests / validations
+  test:
+    strategy:
+      matrix:
+        arch: [arm64, x86_64]
+    name: Test ${{ matrix.arch }}
+    runs-on: xcode-27
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rosetta
+        if: matrix.arch == 'x86_64'
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+      - name: Run unit tests
+        run: scripts/run_unit_tests.sh --arch ${{ matrix.arch }}
+
+  # Build Synth1 and zip it up
+  build:
+    needs: test
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    name: Build ${{ matrix.config }}
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: scripts/build_component.sh ${{ matrix.config }}
+      - name: Package
+        run: |
+          mkdir -p "$(dirname "$ZIP")"
+          ditto -c -k --keepParent build/modern/Build/Products/${{ matrix.config }}/Synth1.component "$ZIP"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.config }}
+          path: ${{ env.ZIP }}
+          retention-days: 1
+
+  # Run post-build tests / validations
+  validate:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
+        arch: [arm64, x86_64]
+    name: Validate ${{ matrix.config }} ${{ matrix.arch }}
+    runs-on: xcode-27
+    timeout-minutes: 10
+    env:
+      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
+      COMPONENT: build/modern/Build/Products/${{ matrix.config }}/Synth1.component
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.config }}
+          path: build/artifacts
+      - name: Unpack
+        run: |
+          mkdir -p "$(dirname "$COMPONENT")"
+          ditto -x -k "$ZIP" "$(dirname "$COMPONENT")"
+      - name: Install Rosetta
+        if: matrix.arch == 'x86_64'
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+      - name: Check the component
+        run: scripts/check_component.sh "$COMPONENT"
+      - name: Run AU tests
+        run: scripts/run_au_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
+      - name: Run auval tests
+        run: scripts/run_auval_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
+
+  # Upload artifacts
+  publish:
+    if: github.event_name == 'push'
+    needs: validate
+    strategy:
+      matrix:
+        config: [Debug, Release]
+    name: Publish ${{ matrix.config }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-${{ matrix.config }}
+          path: build/artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Synth1-${{ matrix.config }}
+          path: ${{ env.ZIP }}
+          retention-days: 30
