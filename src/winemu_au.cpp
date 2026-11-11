@@ -17,7 +17,12 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <mach/mach_time.h>
+#ifdef SYNTH1_MODERN_BUILD
+#include <ApplicationServices/ApplicationServices.h>
+#include <CoreServices/CoreServices.h>
+#else
 #include <Carbon/Carbon.h>
+#endif
 #include "windef.h"
 
 BOOL g_bCaptureWnd;
@@ -646,6 +651,16 @@ void SetCursorPos(int x, int y)
 
 SHORT GetKeyState(int nVirtKey)
 {
+#ifdef SYNTH1_MODERN_BUILD
+    CGEventFlags flags = CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
+    switch(nVirtKey){
+    case VK_PAUSE:      if(flags & kCGEventFlagMaskAlternate) return (SHORT)0x8000; break;   // Option key
+    case VK_SHIFT:      if(flags & kCGEventFlagMaskShift) return (SHORT)0x8000; break;
+    case VK_CONTROL:    if(flags & kCGEventFlagMaskControl) return (SHORT)0x8000; break;
+    case VK_MENU:       if(flags & kCGEventFlagMaskCommand) return (SHORT)0x8000; break;
+    }
+    return 0;
+#else
     KeyMap keys;
     GetKeys(keys);
     // keys[1] holds key codes 32..63 (big endian bit order inside each byte group)
@@ -656,4 +671,5 @@ SHORT GetKeyState(int nVirtKey)
     case VK_MENU:       if(keys[1].bigEndianValue & 0x00800000) return (SHORT)0x8000; break;    // kVK_Command (55)
     }
     return 0;
+#endif
 }

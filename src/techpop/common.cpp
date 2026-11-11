@@ -5,7 +5,11 @@
  * Also defines the global random table g_rnd and the named color table.
  */
 
+#ifdef SYNTH1_MODERN_BUILD
+#include <CoreServices/CoreServices.h>
+#else
 #include <Carbon/Carbon.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include "common.h"

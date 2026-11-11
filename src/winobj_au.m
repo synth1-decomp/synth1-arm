@@ -13,7 +13,9 @@
  */
 
 #import <Cocoa/Cocoa.h>
+#ifndef SYNTH1_MODERN_BUILD
 #import <Carbon/Carbon.h>
+#endif
 #include "windef.h"
 #ifdef SYNTH1_VIEWFACTORY
 #import "SynWindow.h"
@@ -22,8 +24,6 @@
 #endif
 
 #ifdef SYNTH1_MODERN_BUILD
-// Still exported by HIToolbox, but no longer declared in the SDK's headers
-extern OSStatus SetUserFocusWindow(WindowRef inWindow);
 // Defined below, after its first use
 int GetWindowRect(HWND hWnd, RECT* rc);
 #endif
@@ -280,7 +280,9 @@ HWND CreateWindow(int x, int y, int w, int h, float alpha, void* pWnd)
     [[window contentView] addSubview:view];
     [window makeFirstResponder:view];
     [window makeKeyAndOrderFront:window];
+#ifndef SYNTH1_MODERN_BUILD
     SetUserFocusWindow([window windowRef]);
+#endif
     return view;
 }
 
@@ -301,7 +303,9 @@ HWND CreateSoundSelectWindow(int x, int y, int w, int h, float alpha, void* pWnd
     [window makeFirstResponder:view];
     [window makeKeyAndOrderFront:window];
     [window setAcceptsMouseMovedEvents:YES];
+#ifndef SYNTH1_MODERN_BUILD
     SetUserFocusWindow([window windowRef]);
+#endif
     return view;
 }
 

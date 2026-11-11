@@ -184,7 +184,7 @@ flags=(
 link_flags=(
     -arch "$arch" -isysroot "$sdk" -mmacosx-version-min=12.0 -stdlib=libc++
     -framework CoreFoundation -framework CoreServices -framework ApplicationServices
-    -framework AudioToolbox -framework Carbon
+    -framework AudioToolbox
 )
 if [ "$arch" = x86_64 ]; then
     flags+=(-fasm-blocks)       # MSVC-style inline assembly, x86_64 only
