@@ -74,8 +74,7 @@ static inline double fpow(double a, double b)
 {
     NSRect rect = [[self contentView] bounds];
 #ifdef SYNTH1_MODERN_BUILD
-    // The original call (#else branch) passes one argument too many, which a prototype rejects
-    SendMessage0(synthWin, [self windowRef], WM_CREATE - 1, 0, 0);
+    SendMessage0(synthWin, self, WM_CREATE - 1, 0, 0);
 #else
     SendMessage0(synthWin, [self windowRef], WM_CREATE - 1, 0, rect.size.width, rect.size.height);
 #endif

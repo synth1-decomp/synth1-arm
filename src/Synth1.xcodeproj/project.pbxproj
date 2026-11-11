@@ -411,10 +411,6 @@
 			isa = PBXBuildFile;
 			fileRef = DBFF3FCCEE2DDE34E903D46F;
 		};
-		878DC440DCDB9D55887B06D8 = {
-			isa = PBXBuildFile;
-			fileRef = 2D268AAC912F54CC97D6E0B6;
-		};
 		88367F4CF5C34ED4AAD36801 = {
 			isa = PBXBuildFile;
 			fileRef = 64E5465602F671980D7B8AAC;
@@ -614,10 +610,6 @@
 		DB6DDC936DA81494A8C0582E = {
 			isa = PBXBuildFile;
 			fileRef = CF76C9CB04C34E962FCC0763;
-		};
-		DD291BAB6D68D6B7049EECD2 = {
-			isa = PBXBuildFile;
-			fileRef = 2D268AAC912F54CC97D6E0B6;
 		};
 		DDE6A787DB58D74116C259D5 = {
 			isa = PBXBuildFile;
@@ -856,13 +848,6 @@
 			lastKnownFileType = sourcecode.cpp.cpp;
 			path = fftwin.cpp;
 			sourceTree = "<group>";
-		};
-		2D268AAC912F54CC97D6E0B6 = {
-			isa = PBXFileReference;
-			lastKnownFileType = wrapper.framework;
-			name = Carbon.framework;
-			path = System/Library/Frameworks/Carbon.framework;
-			sourceTree = SDKROOT;
 		};
 		2D79150117CF2CFAC7A7DFE1 = {
 			isa = PBXFileReference;
@@ -1526,7 +1511,6 @@
 			files = (
 				60F61360EAEAF38F59AC9868,
 				EF95F2B81E8AAD124AC45766,
-				878DC440DCDB9D55887B06D8,
 				EBE1EFCEDFD0883D6BEAA587,
 				F65856752E90F3F10AD06E4E,
 			);
@@ -1538,7 +1522,6 @@
 			files = (
 				AB3C7698A33BC5DA3642C67C,
 				B1E65FA981330269EBFEB024,
-				DD291BAB6D68D6B7049EECD2,
 				B703642235F0AEF4FC6ED394,
 				8197F717182FA69E4B9F330B,
 			);
@@ -1658,7 +1641,6 @@
 			children = (
 				00E9753B2A5CCFC5E9265CF1,
 				E480DAD608CA80549BA05CD9,
-				2D268AAC912F54CC97D6E0B6,
 				018294555F7B8FD058492DC6,
 				C13ABDB1CF95E95348F3A5A8,
 			);
