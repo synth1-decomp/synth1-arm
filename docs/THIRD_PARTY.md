@@ -147,3 +147,23 @@ one of these two releases.
   - `CAVolumeCurve.h`
   - `MatrixMixerVolumes.cpp`
   - `MatrixMixerVolumes.h`
+
+## Steinberg VST 3 SDK
+
+- **Location:** `src/vst3sdk/` (used only by the VST3 build, its tests and the validator)
+- **Source:** https://github.com/steinbergmedia/vst3sdk, tag `v3.8.1_build_84`
+  (commit `3cdf9ca5d1f5b1b21e0a86832aa4abe55607bd96`), with its submodules at the commits that tag pins:
+  - `base`: https://github.com/steinbergmedia/vst3_base, commit `fcf9da0bd27a16f7f03773a3a39822f28f5c8477`
+  - `pluginterfaces`: https://github.com/steinbergmedia/vst3_pluginterfaces, commit `4f547e8e102b47de4a8b8aaf343c73b700786372`
+  - `public.sdk`: https://github.com/steinbergmedia/vst3_public_sdk, commit `586dc5e6c8012c3e4b01c79389375cbe96bdb1da`
+- **Licence:** MIT (`src/vst3sdk/LICENSE.txt`; each module has the same licence file)
+- **Files taken:** only what the build uses, 377 files, each byte-identical to the release:
+  - `LICENSE.txt` and `README.md` of the SDK;
+  - `base/` and `pluginterfaces/` in full;
+  - from `public.sdk/`: `LICENSE.txt`, `README.md`, `source/`, and `samples/vst-hosting/validator/`
+    (Steinberg's validator, used to test the plug-in) with the one header from another sample that
+    the validator includes, `samples/vst-hosting/audiohost/source/media/miditovst.h`.
+
+  Left out: the example plug-ins and other samples, VSTGUI, the documentation, the tutorials and
+  the CMake modules.
+- **Difference:** none
