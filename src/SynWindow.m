@@ -339,6 +339,11 @@ static inline double fpow(double a, double b)
 - (void)setParam:(void*)pSynth1
 {
     m_pSynth1 = pSynth1;
+#ifdef SYNTH1_MODERN_BUILD
+    // Make the tables in the Options window follow the theme (light/dark) background color
+    [m_list0 setBackgroundColor:[NSColor controlBackgroundColor]];
+    [m_list1 setBackgroundColor:[NSColor controlBackgroundColor]];
+#endif
     if(m_list0){
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(doSelectList1Item:) name:NSTableViewSelectionDidChangeNotification object:m_list1];
         [m_list0 setDataSource:self];
