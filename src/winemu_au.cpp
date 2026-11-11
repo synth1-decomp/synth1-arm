@@ -606,7 +606,11 @@ HBITMAP LoadBitmap(HINSTANCE hInstance, int id)
         }
     }
     CFStringRef fname = CFStringCreateWithFormat(kCFAllocatorDefault, NULL, CFSTR("%s"), name);
+#ifdef SYNTH1_VST3_BUILD
+    CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("jp.daichi.synth1.vst3"));
+#else
     CFBundleRef bundle = CFBundleGetBundleWithIdentifier(CFSTR("jp.daichi.synth1.audiounit.ui"));
+#endif
     CFURLRef url = CFBundleCopyResourceURL(bundle, fname, NULL, NULL);
     if(url == NULL){
         printf("image file not found:%s,%x\n", name, bundle);

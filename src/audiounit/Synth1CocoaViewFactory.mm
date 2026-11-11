@@ -418,6 +418,18 @@ CFStringRef g_hBundleID = CFSTR("jp.daichi.synth1.audiounit.ui");
 
 @end
 
+#ifdef SYNTH1_VST3_BUILD
+#include "../vst3/synth1vst3_hooks.h"
+
+// The VST3 build has no view factory: the plug-in creates the view directly and passes
+// itself to the GUI in place of the AudioUnit.
+void* Synth1Vst3_createView(double width, double height, void* pPlugin, void* pSynth1)
+{
+    NSRect frame = NSMakeRect(0, 0, width, height);
+    return [[Synth1CocoaView alloc] initWithFrame:frame unit:(AudioUnit)pPlugin synth1:pSynth1];
+}
+#else
+
 //==============================================================================
 //  Synth1CocoaViewFactory
 //==============================================================================
@@ -493,3 +505,5 @@ CFStringRef g_hBundleID = CFSTR("jp.daichi.synth1.audiounit.ui");
 }
 
 @end
+
+#endif // SYNTH1_VST3_BUILD
