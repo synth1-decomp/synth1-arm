@@ -1,6 +1,8 @@
-# synth1-decomp
+# synth1-arm
 
-Reconstructed source code for the Synth1 synthesizer.
+Updated fork of Synth1 for modern macOS. Runs natively on both Apple Silicon and Intel Macs.
+
+Based on the decompilation of Synth1 v1.13 beta11. See: [synth1-decomp](https://github.com/synth1-decomp/synth1-decomp).
 
 ## Synth1
 
@@ -12,31 +14,21 @@ Synth1 is copyright Daichi (Daichi Laboratory). All rights to Synth1 remain with
 
 ## Third-party code
 
-Synth1 leverages several third-party libraries. 
+Synth1 leverages several third-party libraries.
 
 See: [THIRD_PARTY.md](docs/THIRD_PARTY.md)
 
-## Requirements
+## Installing
 
-This repo was built by reverse engineering the Synth1 AudioUnit v1.13 beta11, the final Mac release of Synth1.
+Requires macOS 12 or later.
 
-To produce a byte-for-byte match of that release we need to replicate its build environment:
+1. Download `Synth1-<version>-release.pkg` from the [latest release](https://github.com/synth1-decomp/synth1-arm/releases/latest).
+2. Double-click the downloaded `.pkg` installer.
+   1. macOS will show a scary looking warning popup and refuse to open the installer because it isn't signed yet.
+   2. Click **Done** to dismiss the popup for now.
+3. Open **System Settings**, click **Privacy & Security**, then scroll down and click **Open Anyway**.
+4. The warning popup will appear again but this time with its own **Open Anyway** option. Click it to start the installer.
+5. Proceed through the installer like you would any other.
+6. Open your DAW of choice and scan for plugins.
 
-- macOS 10.13.6 (High Sierra)
-- Xcode 9.4.1 (build 9F2000) installed at `/Applications/Xcode941.app`
-
-## Building
-
-The provided `scripts/legacy/build.sh` script configures the build environment, builds the plugin, and verifies it against the original.
-
-Options:
-
-| Option     | Effect                                                    |
-|------------|-----------------------------------------------------------|
-| `--verify` | re-check an existing build                                |
-| `--clean`  | remove the staging copy and DerivedData folder afterwards |
-| `--force`  | skip the macOS-version and ownership checks               |
-
-## Testing
-
-See: [tests/README.md](tests/README.md)
+To uninstall, delete `/Library/Audio/Plug-Ins/Components/Synth1.component`.
