@@ -43,7 +43,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build
-        run: scripts/build_component.sh ${{ matrix.config }}
+        run: scripts/build_plugin.sh --format au ${{ matrix.config }}
       - name: Package
         run: |
           mkdir -p "$(dirname "$ZIP")"
