@@ -7,7 +7,7 @@
  * controller mapping (IMidiMapping), rendering with note events, parameter changes and the MIDI
  * controller proxy parameters, the plug-in state (getState / setState), including state saved
  * by the original VST2 in the forms hosts hand it over, and the editor (attached to an
- * off-screen window).
+ * off-screen window, with a knob drag as on a Retina display).
  *
  * The golden scenarios of the Audio Unit tests (tests/au/au_tests.c) are replayed through the
  * VST3 interfaces after restoring the same default patch, and must reproduce the AU's golden
@@ -761,6 +761,49 @@ static void test_editor(void)
     p.close();
 }
 
+/**
+ * With the slider window turned off in the options, dragging a knob up or down moves its value
+ * that way on a Retina display. The drag goes through the GUI's mouse capture, shared with the AU,
+ * whose screen to view conversion once halved the mouse position and pinned the knob at 0.
+ */
+static void test_knob_drag(void)
+{
+    CFStringRef domain = CFSTR("jp.daichi.synth1");
+    CFPropertyListRef saved = CFPreferencesCopyAppValue(CFSTR("global"), domain);
+    const void* key = CFSTR("slidertype");
+    const void* off = CFSTR("0");
+    CFDictionaryRef global = CFDictionaryCreate(NULL, &key, &off, 1, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+    CFPreferencesSetAppValue(CFSTR("global"), global, domain);
+    CFRelease(global);
+
+    Plugin p;
+    REQUIRE(p.open(44100, 512));
+    Run r;
+    r.plugin = &p;
+    add_change(r, 15, 0.5, 0);      // VCF attack, so the knob can move both ways
+    render_block(r, 64);
+    IPlugView* view = p.controller->createView(ViewType::kEditor);
+    REQUIRE(view != nullptr);
+    ViewRect size;
+    view->getSize(&size);
+    void* parent = view_host_open(size.getWidth(), size.getHeight());
+    REQUIRE(view->attached(parent, kPlatformTypeNSView) == kResultOk);
+
+    view_host_drag(parent, 207, 103, 20);       // the knob's center in panel coordinates
+    double up = p.controller->getParamNormalized(15);
+    CHECK(up > 0.55 && up < 1);
+    view_host_drag(parent, 207, 103, -40);
+    double down = p.controller->getParamNormalized(15);
+    CHECK(down > 0 && down < up - 0.1);
+
+    view->removed();
+    view_host_close(parent);
+    view->release();
+    p.close();
+    CFPreferencesSetAppValue(CFSTR("global"), saved, domain);
+    if (saved) CFRelease(saved);
+}
+
 /* ------------------------------------------------------------------------------------------ */
 /* golden scenarios (tests/au/golden_scenarios.h), replayed through the VST3 interfaces        */
 
@@ -878,6 +921,7 @@ static const struct { const char* name; void (*fn)(void); } kTests[] = {
     { "vst3.state_vst2", test_state_vst2 },
     { "vst3.state_reject", test_state_reject },
     { "vst3.editor", test_editor },
+    { "vst3.knob_drag", test_knob_drag },
     { "vst3.golden", test_golden },
 };
 
