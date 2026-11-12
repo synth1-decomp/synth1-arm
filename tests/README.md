@@ -96,12 +96,13 @@ scripts/run_integration_tests.sh --format vst3 --vst3 path/to/Synth1.vst3 --arch
 ```
 
 A small C++ host loads the built plug-in and drives it only through the VST3 interfaces, as a DAW
-does: the class factory (including the class id derived from the original VST2), buses, the
-parameters (the VST2's ids), the MIDI controller mapping, rendering with note events, parameter
-changes and the MIDI controller proxy parameters, the plug-in state, and the editor (attached to an
-off-screen window by `tests/vst3/view_host.mm`). Like the AU tests it runs
-with `tests/au/au_isolation.c` inserted, so it never touches the user's Synth1 settings or
-`~/Documents`. These tests use the modern toolchain (current Xcode), not the 10.13 setup.
+does: the class factory (the class id derived from the original VST2 and the declaration that the
+plug-in replaces the VST2), buses, the parameters (the VST2's ids), the MIDI controller mapping,
+rendering with note events, parameter changes and the MIDI controller proxy parameters, the plug-in
+state, and the editor (attached to an off-screen window by `tests/vst3/view_host.mm`). Like the AU
+tests it runs with `tests/au/au_isolation.c` inserted, so it never touches the user's Synth1
+settings or `~/Documents`. These tests use the modern toolchain (current Xcode), not the 10.13
+setup.
 
 - **Golden scenarios:** the six AU scenarios are replayed through VST3 events after restoring
   `tests/au/default_state.plist` with `setState`, each in a fresh child process, and must match

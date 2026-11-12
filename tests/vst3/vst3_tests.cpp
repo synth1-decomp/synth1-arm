@@ -40,6 +40,7 @@
 
 #include "pluginterfaces/base/ipluginbase.h"
 #include "pluginterfaces/base/funknownimpl.h"
+#include "pluginterfaces/base/iplugincompatibility.h"
 #include "pluginterfaces/vst/ivstaudioprocessor.h"
 #include "pluginterfaces/vst/ivstcomponent.h"
 #include "pluginterfaces/vst/ivsteditcontroller.h"
@@ -281,13 +282,16 @@ static std::string utf16_to_ascii(const TChar* s)
     return out;
 }
 
-/** The factory has one class: the VST2-compatible class id, "Synth1" by Daichi, an instrument. */
+/**
+ * The factory has the plug-in (the VST2-compatible class id, "Synth1" by Daichi, an instrument)
+ * and the compatibility declaration.
+ */
 static void test_factory(void)
 {
     PFactoryInfo fi;
     REQUIRE(g_factory->getFactoryInfo(&fi) == kResultOk);
     CHECK_STREQ(fi.vendor, "Daichi");
-    CHECK_EQ(g_factory->countClasses(), 1);
+    CHECK_EQ(g_factory->countClasses(), 2);
 
     PClassInfo ci;
     REQUIRE(g_factory->getClassInfo(0, &ci) == kResultOk);
@@ -301,6 +305,41 @@ static void test_factory(void)
     REQUIRE(f2->getClassInfo2(0, &ci2) == kResultOk);
     CHECK_STREQ(ci2.subCategories, "Instrument|Synth");
     f2->release();
+
+    REQUIRE(g_factory->getClassInfo(1, &ci) == kResultOk);
+    CHECK_STREQ(ci.category, kPluginCompatibilityClass);
+}
+
+/** Collects what the plug-in writes into a stream. */
+struct StringStream : U::ImplementsNonDestroyable<U::Directly<IBStream>>
+{
+    std::string str;
+    tresult PLUGIN_API read(void*, int32, int32*) override { return kNotImplemented; }
+    tresult PLUGIN_API write(void* buffer, int32 n, int32* written) override
+    {
+        str.append((const char*)buffer, n);
+        if (written) *written = n;
+        return kResultTrue;
+    }
+    tresult PLUGIN_API seek(int64, int32, int64*) override { return kNotImplemented; }
+    tresult PLUGIN_API tell(int64*) override { return kNotImplemented; }
+};
+
+/**
+ * The compatibility class declares the plug-in as the replacement of the VST2 Synth1: "New" is
+ * the plug-in's class id and "Old" lists the id hosts derive from the VST2 ('S1Vs', "Synth1 VSTi").
+ */
+static void test_vst2_replacement(void)
+{
+    PClassInfo ci;
+    REQUIRE(g_factory->getClassInfo(1, &ci) == kResultOk);
+    IPluginCompatibility* compat = nullptr;
+    REQUIRE(g_factory->createInstance(ci.cid, IPluginCompatibility::iid, (void**)&compat) == kResultOk);
+    StringStream json;
+    CHECK(compat->getCompatibilityJSON(&json) == kResultTrue);
+    compat->release();
+    std::string cid = kExpectedCID;
+    CHECK_STREQ(json.str, "[{\"New\":\"" + cid + "\",\"Old\":[\"" + cid + "\"]}]");
 }
 
 /** No audio inputs, one stereo output, one event input; only 32-bit float. */
@@ -822,6 +861,7 @@ static void test_golden(void)
 
 static const struct { const char* name; void (*fn)(void); } kTests[] = {
     { "vst3.factory", test_factory },
+    { "vst3.vst2_replacement", test_vst2_replacement },
     { "vst3.buses", test_buses },
     { "vst3.parameters", test_parameters },
     { "vst3.midi_mapping", test_midi_mapping },
