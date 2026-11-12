@@ -497,10 +497,15 @@ void CSynthWin::constructPanel(HWND hWnd)
     m_guis.add(new CLabel(hWnd, 0, 7, 6, 60, 15, (char*)" Synth1 ", m_colPanel, m_colLabelText, 1));
     m_guis.add(new CLabel(hWnd, 0, 67, 10, 60, 10, (char*)"Virtual Analog ", m_colPanel, m_colLabelText, 2));
 #ifdef SYNTH1_MODERN_BUILD
-#ifdef SYNTH1_DEBUG_BUILD
-    static const char versionText[] = "V" SYNTH1_VERSION "-" SYNTH1_BUILD_ID " DEBUG";
+#ifdef SYNTH1_VST3_BUILD
+#define SYNTH1_FORMAT_LABEL " VST"
 #else
-    static const char versionText[] = "V" SYNTH1_VERSION "-" SYNTH1_BUILD_ID " RELEASE";
+#define SYNTH1_FORMAT_LABEL " AU"
+#endif
+#ifdef SYNTH1_DEBUG_BUILD
+    static const char versionText[] = "V" SYNTH1_VERSION "-" SYNTH1_BUILD_ID SYNTH1_FORMAT_LABEL " DBG";
+#else
+    static const char versionText[] = "V" SYNTH1_VERSION "-" SYNTH1_BUILD_ID SYNTH1_FORMAT_LABEL " REL";
 #endif
     // One leading space, padded on the right to the length of the original label
     static_assert(sizeof(versionText) < sizeof(ORIGINAL_VERSION_LABEL), "version label is longer than the original");
