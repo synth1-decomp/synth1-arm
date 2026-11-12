@@ -35,7 +35,7 @@ plist_value() {
 # Prints the symbols a binary exports for one architecture, sorted, on one line.
 #   $1 = binary, $2 = architecture
 exports() {
-    nm -gU -arch "$2" "$1" | awk '{print $3}' | sort | tr '\n' ' ' | sed 's/ $//'
+    nm -gU -arch "$2" "$1" | awk '{print $3}' | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//'
 }
 
 root=$(cd "$(dirname "$0")/.." && pwd)
