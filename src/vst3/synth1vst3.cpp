@@ -386,10 +386,10 @@ tresult PLUGIN_API Synth1Vst3::getMidiControllerAssignment(int32 busIndex, int16
 
 ParamValue Synth1Vst3::engineValue(ParamID id) const
 {
-    if (id == kParamMasterVolume) {
-        return CSynthesizer1::valSyn2Vst(id, m_pSynth->m_volumeVal, 113);
-    }
-    return CSynthesizer1::valSyn2Vst(id, m_pSynth->getCurrentSound()->getParamVal(id), 113);
+    int val = (id == kParamMasterVolume) ? m_pSynth->m_volumeVal : m_pSynth->getCurrentSound()->getParamVal(id);
+    // VST3 values must be 0..1. A patch can hold a value above its range (the initial sound's filter
+    // amount is 128 of 0..127), which valSyn2Vst maps above 1, as the AU and the VST2 report it.
+    return std::min(1.0, std::max(0.0, (double)CSynthesizer1::valSyn2Vst(id, val, 113)));
 }
 
 void Synth1Vst3::paramEditedFromGUI(int id)

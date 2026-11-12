@@ -375,6 +375,10 @@ static void test_parameters(void)
         REQUIRE(c->getParameterInfo(i, info) == kResultOk);
         if (info.flags & ParameterInfo::kCanAutomate) automatable++;
         if (info.flags & ParameterInfo::kIsHidden) hidden++;
+        // normalized, also for the default patch's filter amount of 128 (one above its range)
+        if (info.defaultNormalizedValue < 0 || info.defaultNormalizedValue > 1)
+            fail_at(__FILE__, __LINE__, "parameter %u: default %f is not normalized", info.id, info.defaultNormalizedValue);
+        else g_checksOk++;
         if (i < 99) CHECK_EQ(info.id, i);
     }
     CHECK_EQ(automatable, 99);              // 98 named sound parameters + master volume
