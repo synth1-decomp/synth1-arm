@@ -34,23 +34,31 @@ jobs:
     needs: test
     strategy:
       matrix:
+        format: [au, vst3]
         config: [Debug, Release]
-    name: Build ${{ matrix.config }}
+        include:
+          - format: au
+            label: AU
+            bundle: Synth1.component
+          - format: vst3
+            label: VST3
+            bundle: Synth1.vst3
+    name: Build ${{ matrix.label }} ${{ matrix.config }}
     runs-on: xcode-27
     timeout-minutes: 10
     env:
-      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
+      ZIP: build/artifacts/Synth1-${{ matrix.label }}-${{ matrix.config }}.zip
     steps:
       - uses: actions/checkout@v4
       - name: Build
-        run: scripts/build_plugin.sh --format au ${{ matrix.config }}
+        run: scripts/build_plugin.sh --format ${{ matrix.format }} ${{ matrix.config }}
       - name: Package
         run: |
           mkdir -p "$(dirname "$ZIP")"
-          ditto -c -k --keepParent build/modern/Build/Products/${{ matrix.config }}/Synth1.component "$ZIP"
+          ditto -c -k --keepParent build/modern/Build/Products/${{ matrix.config }}/${{ matrix.bundle }} "$ZIP"
       - uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.config }}
+          name: build-${{ matrix.format }}-${{ matrix.config }}
           path: ${{ env.ZIP }}
           retention-days: 1
 
@@ -60,33 +68,41 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        format: [au, vst3]
         config: [Debug, Release]
         arch: [arm64, x86_64]
-    name: Validate ${{ matrix.config }} ${{ matrix.arch }}
+        include:
+          - format: au
+            label: AU
+            bundle: Synth1.component
+          - format: vst3
+            label: VST3
+            bundle: Synth1.vst3
+    name: Validate ${{ matrix.label }} ${{ matrix.config }} ${{ matrix.arch }}
     runs-on: xcode-27
     timeout-minutes: 10
     env:
-      ZIP: build/artifacts/Synth1-${{ matrix.config }}.zip
-      COMPONENT: build/modern/Build/Products/${{ matrix.config }}/Synth1.component
+      ZIP: build/artifacts/Synth1-${{ matrix.label }}-${{ matrix.config }}.zip
+      PLUGIN: build/modern/Build/Products/${{ matrix.config }}/${{ matrix.bundle }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: build-${{ matrix.config }}
+          name: build-${{ matrix.format }}-${{ matrix.config }}
           path: build/artifacts
       - name: Unpack
         run: |
-          mkdir -p "$(dirname "$COMPONENT")"
-          ditto -x -k "$ZIP" "$(dirname "$COMPONENT")"
+          mkdir -p "$(dirname "$PLUGIN")"
+          ditto -x -k "$ZIP" "$(dirname "$PLUGIN")"
       - name: Install Rosetta
         if: matrix.arch == 'x86_64'
         run: sudo softwareupdate --install-rosetta --agree-to-license
-      - name: Check the component
-        run: scripts/check_component.sh "$COMPONENT"
-      - name: Run integration tests
-        run: scripts/run_integration_tests.sh --format au --arch ${{ matrix.arch }} --au "$COMPONENT"
-      - name: Run auval tests
-        run: scripts/run_auval_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
+      - name: Check the plugin
+        run: scripts/check_plugin.sh --format ${{ matrix.format }} "$PLUGIN"
+      - name: Run the integration tests
+        run: scripts/run_integration_tests.sh --format ${{ matrix.format }} --arch ${{ matrix.arch }} --${{ matrix.format }} "$PLUGIN"
+      - name: Run the validator
+        run: scripts/run_validator_tests.sh --format ${{ matrix.format }} --arch ${{ matrix.arch }} --${{ matrix.format }} "$PLUGIN"
 
   # Build installers and publish them to a GitHub release tagged '<version>-<commit>'
   release:
@@ -110,7 +126,9 @@ jobs:
         run: |
           for config in Debug Release; do
             mkdir -p build/modern/Build/Products/$config
-            ditto -x -k build/artifacts/Synth1-$config.zip build/modern/Build/Products/$config
+            for label in AU VST3; do
+              ditto -x -k build/artifacts/Synth1-$label-$config.zip build/modern/Build/Products/$config
+            done
           done
       - name: Read the version
         run: |
@@ -130,14 +148,19 @@ jobs:
       - name: Build the installers
         if: env.RELEASED != '1'
         run: |
-          scripts/build_pkg.sh --config Release
-          scripts/build_pkg.sh --config Debug
+          for format in au vst3; do
+            for config in Release Debug; do
+              scripts/build_pkg.sh --format $format --config $config
+            done
+          done
       - name: Publish the release
         if: env.RELEASED != '1'
         run: |
           gh release create "$VERSION" \
-            "build/pkg/Synth1-$VERSION-release.pkg" \
-            "build/pkg/Synth1-$VERSION-debug.pkg" \
+            "build/pkg/Synth1-AU-$VERSION-release.pkg" \
+            "build/pkg/Synth1-AU-$VERSION-debug.pkg" \
+            "build/pkg/Synth1-VST3-$VERSION-release.pkg" \
+            "build/pkg/Synth1-VST3-$VERSION-debug.pkg" \
             --target "$GITHUB_SHA" \
             --title "Synth1 $VERSION" \
             --generate-notes
