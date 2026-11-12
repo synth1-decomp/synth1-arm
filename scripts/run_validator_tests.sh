@@ -8,7 +8,9 @@
 #
 # --format vst3 builds the VST3 validator from the SDK sources (src/vst3sdk) into
 # build/vst3-validator-ARCH, once per architecture. The SDK normally builds it with CMake; this
-# project builds with Xcode, so it is compiled here directly.
+# project builds with Xcode, so it is compiled here directly. Like the integration tests it is
+# linked with tests/au/au_isolation.c, so the plugin sees default settings (the same patch as in
+# CI) and a temporary folder instead of ~/Documents.
 set -euo pipefail
 
 usage() {
@@ -165,13 +167,17 @@ install_component() {
     exit 1
 }
 
-# Compiles the VST3 validator's sources in parallel and links it, unless it is already built.
+# Compiles the VST3 validator's sources in parallel and links it with the isolation library,
+# unless both are already built.
 build_vst3_validator() {
     local sdk=$root/src/vst3sdk
     local flags=(-arch "$arch" -isysroot "$(xcrun --show-sdk-path)" -mmacosx-version-min=12.0
                  -std=c++17 -O1 -w -DRELEASE=1 -I"$sdk")
-    [ -x "$validator" ] && return
+    [ -x "$validator" ] && [ -f "$build_dir/libau_isolation.dylib" ] && return
     mkdir -p "$build_dir/obj"
+    xcrun clang -arch "$arch" -mmacosx-version-min=12.0 -dynamiclib -O1 -w \
+        "$root/tests/au/au_isolation.c" -framework CoreFoundation -framework CoreServices \
+        -install_name @executable_path/libau_isolation.dylib -o "$build_dir/libau_isolation.dylib"
     echo "Building the VST3 validator ($arch)"
     printf '%s\n' "${SOURCES[@]}" | xargs -P "$(sysctl -n hw.ncpu)" -I{} sh -c '
         src=$1; shift
@@ -181,7 +187,7 @@ build_vst3_validator() {
             *)    exec xcrun clang++ "$@" -c "'"$sdk"'/$src" -o "$obj" ;;
         esac' sh {} "${flags[@]}"
     xcrun clang++ -arch "$arch" -mmacosx-version-min=12.0 "$build_dir"/obj/*.o \
-        -framework Cocoa -framework CoreFoundation -o "$validator.tmp"
+        "$build_dir/libau_isolation.dylib" -framework Cocoa -framework CoreFoundation -o "$validator.tmp"
     mv "$validator.tmp" "$validator"
 }
 
@@ -197,6 +203,8 @@ case "$format" in
         build_dir=$root/build/vst3-validator-$arch
         validator=$build_dir/validator
         build_vst3_validator
-        arch -"$arch" "$validator" "$bundle"
+        test_home=$(mktemp -d "${TMPDIR:-/tmp}/synth1-vst3-validator.XXXXXX")
+        trap 'rm -rf "$test_home"' EXIT
+        SYNTH1_TEST_HOME=$test_home arch -"$arch" "$validator" "$bundle"
         ;;
 esac
