@@ -699,6 +699,466 @@
 			isa = PBXBuildFile;
 			fileRef = CB390926D78365F542710CC2;
 		};
+		EE2885B8D706266010B08ED5 = {
+			isa = PBXBuildFile;
+			fileRef = 72C7FE5A7A82B2000F2F8002;
+		};
+		5AEF168FC04E3EC2C5B946B7 = {
+			isa = PBXBuildFile;
+			fileRef = 311E36BA27104D645A3EDC8F;
+		};
+		19E03A9CEDEDFA7794806093 = {
+			isa = PBXBuildFile;
+			fileRef = 51E4A280AC3FA1CC78FC0391;
+		};
+		854E9601EF24B0F323A48AEA = {
+			isa = PBXBuildFile;
+			fileRef = 1D2D555498F41461CF588D78;
+		};
+		E11223A7EF11D1E1A8CCBA45 = {
+			isa = PBXBuildFile;
+			fileRef = C3AB8ADCB41D843329C0442B;
+		};
+		556915239664A528189BAEA8 = {
+			isa = PBXBuildFile;
+			fileRef = FAE62803078D4FE546BCCA40;
+		};
+		94744ABE8E0D052AD897D8B3 = {
+			isa = PBXBuildFile;
+			fileRef = C49DBAA400AFC5E83B447251;
+		};
+		5664DB84293189918B77B90E = {
+			isa = PBXBuildFile;
+			fileRef = BF336DC54C98DF829DFC5B52;
+		};
+		FE472408AE34FB4BAB669481 = {
+			isa = PBXBuildFile;
+			fileRef = D430A2D00027EC2883F93245;
+		};
+		CC5E86700C5A0D4503F04040 = {
+			isa = PBXBuildFile;
+			fileRef = BB83309BD8BA734A44AE0591;
+		};
+		8349F22BE34C01FDE9CA4B9E = {
+			isa = PBXBuildFile;
+			fileRef = 76ACA82CE1EFE2DB706933BC;
+		};
+		19E8374210CE73558E2D56DA = {
+			isa = PBXBuildFile;
+			fileRef = 56510B966DCABF8AE2AE0F5B;
+		};
+		14529094FF27E6B196C0E17D = {
+			isa = PBXBuildFile;
+			fileRef = 9EB3155837B7863AECDDA94D;
+		};
+		71D7E76563A63FA912BD1590 = {
+			isa = PBXBuildFile;
+			fileRef = 8717A2E8EC2248528791BD73;
+		};
+		7FFDB3AAD2736183F62FD791 = {
+			isa = PBXBuildFile;
+			fileRef = BC67345D9EACA7E522B5BC24;
+		};
+		F21427607956196B76FD3EC0 = {
+			isa = PBXBuildFile;
+			fileRef = BD1831AF992F3B6FF0A2FC43;
+		};
+		B9EAF276436C52849E2E04C5 = {
+			isa = PBXBuildFile;
+			fileRef = 899DF45078BEAFA4284A0A03;
+		};
+		9B05B14CF4F3476C124177F2 = {
+			isa = PBXBuildFile;
+			fileRef = 7E77A2854A140D56C8BE6A3B;
+		};
+		E09377945D2EEF90DB552403 = {
+			isa = PBXBuildFile;
+			fileRef = 97175CB40733EAC356AA9A9C;
+		};
+		C334C811DA0917BF9CF0D8FB = {
+			isa = PBXBuildFile;
+			fileRef = 0A42B054D70EA50E68C9C2EF;
+		};
+		81CE85F7EC72A8D6F9B3183E = {
+			isa = PBXBuildFile;
+			fileRef = 9E3D37A49326E855AE83B2A9;
+		};
+		B52CC41823F5CE4656939733 = {
+			isa = PBXBuildFile;
+			fileRef = 57643963272578299655FC9F;
+		};
+		610A1E266627F2FF3465B8FA = {
+			isa = PBXBuildFile;
+			fileRef = C75FBABC2FD0CD01EB14C84E;
+		};
+		C98C1CED3557D4755A045DEF = {
+			isa = PBXBuildFile;
+			fileRef = B03D5297EF16D77AE53D7BE4;
+		};
+		87E3B3BFC4C010E0DC4F0401 = {
+			isa = PBXBuildFile;
+			fileRef = 5BD3615BF96E8349982C436B;
+		};
+		2566EA510B532E97F5E91B30 = {
+			isa = PBXBuildFile;
+			fileRef = 9D701C48408399F78BBAC143;
+		};
+		872EA5D7A6ACB585720AA401 = {
+			isa = PBXBuildFile;
+			fileRef = BDA4079E422C954BDAF259AD;
+		};
+		A4ADD340855BA0358561D882 = {
+			isa = PBXBuildFile;
+			fileRef = D8D2D919E3864E7C23817208;
+		};
+		D1E03FAF26AADC08D74AC8E6 = {
+			isa = PBXBuildFile;
+			fileRef = F6636F45022F1B09CB5B524B;
+		};
+		5C20B2EE9C638A408A040F52 = {
+			isa = PBXBuildFile;
+			fileRef = 705C5AF9D35CE6BE9026DD55;
+		};
+		E16028B186819A8BF4455DC3 = {
+			isa = PBXBuildFile;
+			fileRef = 644F0ED53A50792F232A6DB5;
+		};
+		1B4CE1313A8EDD8E415F7A5C = {
+			isa = PBXBuildFile;
+			fileRef = BF42BFB8683E8F94AF9BFE93;
+		};
+		ABB5AB8A668E113F4E476A12 = {
+			isa = PBXBuildFile;
+			fileRef = 7CEC7C2A55719798DE20DA5A;
+		};
+		22E37C130679EEE6B41D2A09 = {
+			isa = PBXBuildFile;
+			fileRef = 9E9D9D5222DDC18BB1EFC33A;
+		};
+		2AB30B393BB0AB60B1737EEE = {
+			isa = PBXBuildFile;
+			fileRef = CD0AE7994DB07CE545B0B7CD;
+		};
+		1935F3EDEA51CEDF5DCE8FFB = {
+			isa = PBXBuildFile;
+			fileRef = AC6415179E7E5590145E3C78;
+		};
+		BCCE79D03F462555FCFD7E72 = {
+			isa = PBXBuildFile;
+			fileRef = C478D23058B354628CF36B69;
+		};
+		859DF5391F1A6C778955308B = {
+			isa = PBXBuildFile;
+			fileRef = 289F67808960AE28CC80AE57;
+		};
+		7E5C1DDAB419AC8C316D8F53 = {
+			isa = PBXBuildFile;
+			fileRef = 875F0C75426029CDF5AF2725;
+		};
+		EBB8F27EB2B268110D3CE5B3 = {
+			isa = PBXBuildFile;
+			fileRef = 3E9EA8F1E58A23F055794FE7;
+		};
+		CA035986B53B62F7EB906E28 = {
+			isa = PBXBuildFile;
+			fileRef = 3ACF1A2C1E6D10B391B83F63;
+		};
+		B2811D27060249B9AA7E86DD = {
+			isa = PBXBuildFile;
+			fileRef = 07CF108304AB6266DB3F168A;
+		};
+		0B6C308A4011F2419421E6DF = {
+			isa = PBXBuildFile;
+			fileRef = C8D4A1710F44EB9268D4C7A0;
+		};
+		4D9D47AE1B19367D53D27EE0 = {
+			isa = PBXBuildFile;
+			fileRef = 8F1216A154CB1C2859D76828;
+		};
+		C33850B83587CE3077FD6C16 = {
+			isa = PBXBuildFile;
+			fileRef = 6E02DDAC0D2749FF6B17C621;
+		};
+		98CCD383E33BDA27433E171D = {
+			isa = PBXBuildFile;
+			fileRef = 252ECC3145CAA5B6BCBE6916;
+		};
+		11FD5DF592828E12B1D196FB = {
+			isa = PBXBuildFile;
+			fileRef = 587874DF813FC95F8B617C46;
+		};
+		89CEE14B5A801332B86699A4 = {
+			isa = PBXBuildFile;
+			fileRef = 08179FD14B521054C7C5FE65;
+		};
+		46B19D3EEA3CC76A1A3D8377 = {
+			isa = PBXBuildFile;
+			fileRef = BF00FA8CAD8A673A29EFA18B;
+		};
+		A64231797BFD71B9E5EAD2A7 = {
+			isa = PBXBuildFile;
+			fileRef = E3F391BE470941889AF8B4A0;
+		};
+		63A0497CCF44806B3CA519EE = {
+			isa = PBXBuildFile;
+			fileRef = EA8466B62B5A1C439FFEB6C0;
+		};
+		5BF4D2DE829DC1DA1D85860E = {
+			isa = PBXBuildFile;
+			fileRef = 1D34CD8CAB28F5D6025B2550;
+		};
+		089683A33BCD26CACFEAA039 = {
+			isa = PBXBuildFile;
+			fileRef = 64E5465602F671980D7B8AAC;
+		};
+		75E85F36273E19671475C586 = {
+			isa = PBXBuildFile;
+			fileRef = 9FD1154AAC52E783C330F119;
+		};
+		B8780D71294431239FACAEAF = {
+			isa = PBXBuildFile;
+			fileRef = 7A27D1464FBD6F6F51F34D28;
+		};
+		671AF89D884849C13488AFE1 = {
+			isa = PBXBuildFile;
+			fileRef = 99F7699F21A8EF1C79226CDC;
+		};
+		250525CAF4291B77AE8184C1 = {
+			isa = PBXBuildFile;
+			fileRef = 8B310C3A3AED42533FD5C253;
+		};
+		37B411B5DD90805F44073AA7 = {
+			isa = PBXBuildFile;
+			fileRef = 7BA34C0E42BD2E124D210A0E;
+		};
+		401E75D262AB2E126F35A2E2 = {
+			isa = PBXBuildFile;
+			fileRef = C983FCC7C8F6979E2863C3D6;
+		};
+		6C6A5DFDA88F5BA39C081AAB = {
+			isa = PBXBuildFile;
+			fileRef = 1E02949DDF493F28CBFAE381;
+		};
+		3FDF32C6C36676D80A0394BC = {
+			isa = PBXBuildFile;
+			fileRef = 80E8C77170B96998FFEA32CD;
+		};
+		6A9C83BE768DEC9315BD5300 = {
+			isa = PBXBuildFile;
+			fileRef = 129C07D68A581CEB8E2B57CC;
+		};
+		5BC575038D717160CDF6F811 = {
+			isa = PBXBuildFile;
+			fileRef = 7AB9E0C968FE6E964AB36B3C;
+		};
+		ABC1548CA029E544246836FB = {
+			isa = PBXBuildFile;
+			fileRef = 8A31CB23C1AAE877C50F572F;
+		};
+		F8FBC63BEC7367D3ED4C25A0 = {
+			isa = PBXBuildFile;
+			fileRef = A13142DCFA8488A3B23F853C;
+		};
+		A92A541CC848F52FBE66295F = {
+			isa = PBXBuildFile;
+			fileRef = 1BDE54D80AA00E6787C29591;
+		};
+		6FAFFFEB651B230F9EBC1C84 = {
+			isa = PBXBuildFile;
+			fileRef = DBFF3FCCEE2DDE34E903D46F;
+		};
+		EF74E8CB0BAFD48F95DCB0A5 = {
+			isa = PBXBuildFile;
+			fileRef = CB390926D78365F542710CC2;
+		};
+		29385527B8BD2718AAE32C3F = {
+			isa = PBXBuildFile;
+			fileRef = CD60FC9E50865AB686E203F5;
+		};
+		D4011B0B35BBE438B38B4225 = {
+			isa = PBXBuildFile;
+			fileRef = DBE6B2AD02B72F2B137AA55D;
+		};
+		3B76E72160102BAB922C0A0A = {
+			isa = PBXBuildFile;
+			fileRef = 167560087D18601A2BC218C5;
+		};
+		D5928928826C18739BD5C0E0 = {
+			isa = PBXBuildFile;
+			fileRef = 0F569203175E6A2FBABDF810;
+		};
+		E29C24FD44ACCD3D187D216E = {
+			isa = PBXBuildFile;
+			fileRef = A85ED86C4C7DF74FD4EB8C4D;
+		};
+		6E9A1E91EC3774B6F44FA441 = {
+			isa = PBXBuildFile;
+			fileRef = 9F532EE6A3595796F0A763E7;
+		};
+		01EEDB9327400CCAC4A7C4AD = {
+			isa = PBXBuildFile;
+			fileRef = 6A80C219676DC18034BDE73E;
+		};
+		C267F6B49533913FC1A130F5 = {
+			isa = PBXBuildFile;
+			fileRef = 8018053F0DFF9F5DE4C26236;
+		};
+		AB2C50712B551AF8D858BFA3 = {
+			isa = PBXBuildFile;
+			fileRef = 3C040F3BD4A4975E8E8DDAFA;
+		};
+		A71B88B390E8BCEADAAC40ED = {
+			isa = PBXBuildFile;
+			fileRef = 2D79150117CF2CFAC7A7DFE1;
+		};
+		1CAE33EDE158A901B0E35579 = {
+			isa = PBXBuildFile;
+			fileRef = C6A1A823B5DB795F83C268CA;
+		};
+		602CC5ACC879BD67EA13BF76 = {
+			isa = PBXBuildFile;
+			fileRef = 3A0A0C923D1E6420E81BB233;
+		};
+		57C14F9465DD9612F1C72B78 = {
+			isa = PBXBuildFile;
+			fileRef = AE5848F2912A8779530DC1E3;
+		};
+		9593FCF260C38C0AB2427F3E = {
+			isa = PBXBuildFile;
+			fileRef = CF76C9CB04C34E962FCC0763;
+		};
+		1831EC954AA92ED5A969E793 = {
+			isa = PBXBuildFile;
+			fileRef = 346FC6D79628B23C04F3B2CD;
+		};
+		9BB8B8A61A967F0C3DAD4C8D = {
+			isa = PBXBuildFile;
+			fileRef = 13830662009E1193A6D9F6B7;
+		};
+		78C5FB0B46FEC8593001E3AD = {
+			isa = PBXBuildFile;
+			fileRef = BA5751171DE8EB9E101ED6E8;
+		};
+		FB9442C1075B9DE8ADD450E7 = {
+			isa = PBXBuildFile;
+			fileRef = 7128320000369C62689E3C7C;
+		};
+		E38F87CE0143BD929E3E5A22 = {
+			isa = PBXBuildFile;
+			fileRef = 939A2B3A300F98A196053AAC;
+		};
+		33904107F0600D6F1CFD7003 = {
+			isa = PBXBuildFile;
+			fileRef = AF506BC4588FA449BA1AC1A5;
+		};
+		A8015DDDABF19D5A5CA8E128 = {
+			isa = PBXBuildFile;
+			fileRef = 3C30815B485D9B26D1BD5F99;
+		};
+		3B84E17664AF37DFE65D7AF7 = {
+			isa = PBXBuildFile;
+			fileRef = 05369FF5DEF79505EDD3A1D9;
+		};
+		F7142C2D41C7A826603FA2CE = {
+			isa = PBXBuildFile;
+			fileRef = D5CA6C176D9A78CFE7FD0A54;
+		};
+		19065A03559BD41D583EAA33 = {
+			isa = PBXBuildFile;
+			fileRef = 8C0548D88BD28DDC6AABB05D;
+		};
+		8AC9AD195C5C781A3BEFA528 = {
+			isa = PBXBuildFile;
+			fileRef = AB4D57EBEB7931D309D3B60C;
+		};
+		6064B82ACEFB1C3461347B15 = {
+			isa = PBXBuildFile;
+			fileRef = 2534E1D51E411C0FAF340BD0;
+		};
+		A52C73348D4ADF4D062ED3F2 = {
+			isa = PBXBuildFile;
+			fileRef = DD216A931293BBD12FF7E36F;
+		};
+		6489765DAACC64B04B28E8C9 = {
+			isa = PBXBuildFile;
+			fileRef = E8A16C16A585234BEC153360;
+		};
+		6CE617142833EB9907929FD6 = {
+			isa = PBXBuildFile;
+			fileRef = A4DECD2D6FF9AA574AF76492;
+		};
+		C640F6D4CFEBF81E1A1B883A = {
+			isa = PBXBuildFile;
+			fileRef = 7C37CCF2093E9F82B76F38AD;
+		};
+		B67229D6EB150BFD6D0E666F = {
+			isa = PBXBuildFile;
+			fileRef = F39F6381926D4BAA05EF2FFE;
+		};
+		A227041AA8940759FF9E584E = {
+			isa = PBXBuildFile;
+			fileRef = 5B762633F4B8ABD9EEFF6F81;
+		};
+		9B140B012F5398F0913CED75 = {
+			isa = PBXBuildFile;
+			fileRef = 952B3D5266BF5ABDE8B1C292;
+		};
+		80EA7057C3D88E198D022F3F = {
+			isa = PBXBuildFile;
+			fileRef = 5E3414FED22641E78B9E53F9;
+		};
+		3C0F9E3ACB2F01D3ADDC8CC4 = {
+			isa = PBXBuildFile;
+			fileRef = 7FA32812BBD3CEF5D7A6EDDA;
+		};
+		0E9C1347BA0BFD7D4DBEAD53 = {
+			isa = PBXBuildFile;
+			fileRef = B82FCA34639794EA8BD38609;
+		};
+		AEEBB0829A0AF946FE1F73A1 = {
+			isa = PBXBuildFile;
+			fileRef = 8FB70BEDA7842253CABFB9C5;
+		};
+		F228763CDAB4DEADFDEF82E9 = {
+			isa = PBXBuildFile;
+			fileRef = 5BF2C6C00B51329A8D86ABCA;
+		};
+		C62DBB3E4B7E8327ED216262 = {
+			isa = PBXBuildFile;
+			fileRef = 97D3A55804A73A33959729C5;
+		};
+		B5483A20AC3E55938D5735AA = {
+			isa = PBXBuildFile;
+			fileRef = 6D7F32CB8E3D1FF9585EE3AC;
+		};
+		3B581CDE388C284A1C4F6483 = {
+			isa = PBXBuildFile;
+			fileRef = 00E9753B2A5CCFC5E9265CF1;
+		};
+		B1FC8C34BBFFC6D03104EFA3 = {
+			isa = PBXBuildFile;
+			fileRef = E480DAD608CA80549BA05CD9;
+		};
+		C259FCF9B0F475233DCB668A = {
+			isa = PBXBuildFile;
+			fileRef = 018294555F7B8FD058492DC6;
+		};
+		C732FADE684EEE9338806B90 = {
+			isa = PBXBuildFile;
+			fileRef = C13ABDB1CF95E95348F3A5A8;
+		};
+		9A2701575B4791494818A0F4 = {
+			isa = PBXBuildFile;
+			fileRef = 787CEAE3FB964BD556C19A76;
+		};
+		E80EEC6A602292C1D50383EA = {
+			isa = PBXBuildFile;
+			fileRef = CDE1E69825191F5C88C07BDC;
+		};
+		43F544A7732A4839F6AADBDA = {
+			isa = PBXBuildFile;
+			fileRef = 0E1114D74E10624BD915074A;
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1502,6 +1962,261 @@
 			path = Version.xcconfig;
 			sourceTree = "<group>";
 		};
+		BA5751171DE8EB9E101ED6E8 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = synth1vst3.cpp;
+			sourceTree = "<group>";
+		};
+		5E02AD2F2C0804FC10E29449 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.c.h;
+			path = synth1vst3.h;
+			sourceTree = "<group>";
+		};
+		7128320000369C62689E3C7C = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			path = synth1vst3entry.cpp;
+			sourceTree = "<group>";
+		};
+		520C1C321291ADF9DD5F94E8 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.c.h;
+			path = synth1vst3_hooks.h;
+			sourceTree = "<group>";
+		};
+		A6AFE7587679B108F4B71E05 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.c.h;
+			path = vst3_prefix.h;
+			sourceTree = "<group>";
+		};
+		47541EF1177E69AF5C5CB412 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = text.plist.xml;
+			path = "Synth1VST3-Info.plist";
+			sourceTree = "<group>";
+		};
+		939A2B3A300F98A196053AAC = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = baseiids.cpp;
+			path = vst3sdk/base/source/baseiids.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		AF506BC4588FA449BA1AC1A5 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fbuffer.cpp;
+			path = vst3sdk/base/source/fbuffer.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		3C30815B485D9B26D1BD5F99 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fdebug.cpp;
+			path = vst3sdk/base/source/fdebug.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		05369FF5DEF79505EDD3A1D9 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fobject.cpp;
+			path = vst3sdk/base/source/fobject.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		D5CA6C176D9A78CFE7FD0A54 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fstreamer.cpp;
+			path = vst3sdk/base/source/fstreamer.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		8C0548D88BD28DDC6AABB05D = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = fstring.cpp;
+			path = vst3sdk/base/source/fstring.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		AB4D57EBEB7931D309D3B60C = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = updatehandler.cpp;
+			path = vst3sdk/base/source/updatehandler.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		2534E1D51E411C0FAF340BD0 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = flock.cpp;
+			path = vst3sdk/base/thread/source/flock.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		DD216A931293BBD12FF7E36F = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = conststringtable.cpp;
+			path = vst3sdk/pluginterfaces/base/conststringtable.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		E8A16C16A585234BEC153360 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = coreiids.cpp;
+			path = vst3sdk/pluginterfaces/base/coreiids.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		A4DECD2D6FF9AA574AF76492 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = funknown.cpp;
+			path = vst3sdk/pluginterfaces/base/funknown.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		7C37CCF2093E9F82B76F38AD = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = ustring.cpp;
+			path = vst3sdk/pluginterfaces/base/ustring.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		F39F6381926D4BAA05EF2FFE = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = commoniids.cpp;
+			path = vst3sdk/public.sdk/source/common/commoniids.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		5B762633F4B8ABD9EEFF6F81 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = pluginview.cpp;
+			path = vst3sdk/public.sdk/source/common/pluginview.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		952B3D5266BF5ABDE8B1C292 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = macmain.cpp;
+			path = vst3sdk/public.sdk/source/main/macmain.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		5E3414FED22641E78B9E53F9 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = moduleinit.cpp;
+			path = vst3sdk/public.sdk/source/main/moduleinit.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		7FA32812BBD3CEF5D7A6EDDA = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = pluginfactory.cpp;
+			path = vst3sdk/public.sdk/source/main/pluginfactory.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		B82FCA34639794EA8BD38609 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vstbus.cpp;
+			path = vst3sdk/public.sdk/source/vst/vstbus.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		8FB70BEDA7842253CABFB9C5 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vstcomponentbase.cpp;
+			path = vst3sdk/public.sdk/source/vst/vstcomponentbase.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		5BF2C6C00B51329A8D86ABCA = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vstinitiids.cpp;
+			path = vst3sdk/public.sdk/source/vst/vstinitiids.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		97D3A55804A73A33959729C5 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vstparameters.cpp;
+			path = vst3sdk/public.sdk/source/vst/vstparameters.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		6D7F32CB8E3D1FF9585EE3AC = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vstsinglecomponenteffect.cpp;
+			path = vst3sdk/public.sdk/source/vst/vstsinglecomponenteffect.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		1A2C282693615C4F103A5AD9 = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			includeInIndex = 0;
+			path = Synth1.vst3;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		787CEAE3FB964BD556C19A76 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = memorystream.cpp;
+			path = vst3sdk/public.sdk/source/common/memorystream.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		CDE1E69825191F5C88C07BDC = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.cpp;
+			name = vst2persistence.cpp;
+			path = vst3sdk/public.sdk/source/vst/utility/vst2persistence.cpp;
+			sourceTree = SOURCE_ROOT;
+		};
+		3B77455FC359A3832F5F3443 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.c.h;
+			path = synth1vst3view.h;
+			sourceTree = "<group>";
+		};
+		0E1114D74E10624BD915074A = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.objcpp;
+			path = synth1vst3view.mm;
+			sourceTree = "<group>";
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1524,6 +2239,17 @@
 				B1E65FA981330269EBFEB024,
 				B703642235F0AEF4FC6ED394,
 				8197F717182FA69E4B9F330B,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E21EA36EA8ED84B3A7DBEEBB = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3B581CDE388C284A1C4F6483,
+				B1FC8C34BBFFC6D03104EFA3,
+				C259FCF9B0F475233DCB668A,
+				C732FADE684EEE9338806B90,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1575,6 +2301,7 @@
 			children = (
 				23E606232E4DCEF8F67EA4B9,
 				C6200598BB008E20BF3ED330,
+				1A2C282693615C4F103A5AD9,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1630,6 +2357,8 @@
 				4858CC3AC62B9A81ABE4127B,
 				5A559843A90E30B141C300FB,
 				2AC8BA37DAC32D5437812408,
+				A7DAD77C0D4018593E4CE4A6,
+				41188DB4DC5D2DB6B02F5D6C,
 			);
 			sourceTree = "<group>";
 			indentWidth = 4;
@@ -1749,6 +2478,52 @@
 			path = audiounit/AUPublic/AUBase;
 			sourceTree = "<group>";
 		};
+		A7DAD77C0D4018593E4CE4A6 = {
+			isa = PBXGroup;
+			children = (
+				BA5751171DE8EB9E101ED6E8,
+				5E02AD2F2C0804FC10E29449,
+				7128320000369C62689E3C7C,
+				520C1C321291ADF9DD5F94E8,
+				A6AFE7587679B108F4B71E05,
+				47541EF1177E69AF5C5CB412,
+				3B77455FC359A3832F5F3443,
+				0E1114D74E10624BD915074A,
+			);
+			path = vst3;
+			sourceTree = "<group>";
+		};
+		41188DB4DC5D2DB6B02F5D6C = {
+			isa = PBXGroup;
+			children = (
+				939A2B3A300F98A196053AAC,
+				AF506BC4588FA449BA1AC1A5,
+				3C30815B485D9B26D1BD5F99,
+				05369FF5DEF79505EDD3A1D9,
+				D5CA6C176D9A78CFE7FD0A54,
+				8C0548D88BD28DDC6AABB05D,
+				AB4D57EBEB7931D309D3B60C,
+				2534E1D51E411C0FAF340BD0,
+				DD216A931293BBD12FF7E36F,
+				E8A16C16A585234BEC153360,
+				A4DECD2D6FF9AA574AF76492,
+				7C37CCF2093E9F82B76F38AD,
+				F39F6381926D4BAA05EF2FFE,
+				5B762633F4B8ABD9EEFF6F81,
+				952B3D5266BF5ABDE8B1C292,
+				5E3414FED22641E78B9E53F9,
+				7FA32812BBD3CEF5D7A6EDDA,
+				B82FCA34639794EA8BD38609,
+				8FB70BEDA7842253CABFB9C5,
+				5BF2C6C00B51329A8D86ABCA,
+				97D3A55804A73A33959729C5,
+				6D7F32CB8E3D1FF9585EE3AC,
+				787CEAE3FB964BD556C19A76,
+				CDE1E69825191F5C88C07BDC,
+			);
+			name = vst3sdk;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1789,6 +2564,25 @@
 			productReference = C6200598BB008E20BF3ED330;
 			productType = "com.apple.product-type.bundle";
 		};
+		ACB0296E12E797997ED5F33B = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5781827FCF49A02FF84EB09;
+			buildPhases = (
+				0AF9CA0A7DB94F0463230A92,
+				7946050917EE43E7A68F93E5,
+				6AE9534D9AD9714EA517EBC6,
+				D7312C5F3BC1B7988797BE9D,
+				E21EA36EA8ED84B3A7DBEEBB,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Synth1VST3;
+			productName = Synth1VST3;
+			productReference = 1A2C282693615C4F103A5AD9;
+			productType = "com.apple.product-type.bundle";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -1811,6 +2605,7 @@
 			targets = (
 				9E75425A89B1885AB7909C09,
 				E54A1D3A3EBBB048CD1AFD81,
+				ACB0296E12E797997ED5F33B,
 			);
 		};
 /* End PBXProject section */
@@ -1853,6 +2648,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		6AE9534D9AD9714EA517EBC6 = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE2885B8D706266010B08ED5,
+				5AEF168FC04E3EC2C5B946B7,
+				19E03A9CEDEDFA7794806093,
+				854E9601EF24B0F323A48AEA,
+				E11223A7EF11D1E1A8CCBA45,
+				556915239664A528189BAEA8,
+				94744ABE8E0D052AD897D8B3,
+				5664DB84293189918B77B90E,
+				FE472408AE34FB4BAB669481,
+				CC5E86700C5A0D4503F04040,
+				8349F22BE34C01FDE9CA4B9E,
+				19E8374210CE73558E2D56DA,
+				14529094FF27E6B196C0E17D,
+				71D7E76563A63FA912BD1590,
+				7FFDB3AAD2736183F62FD791,
+				F21427607956196B76FD3EC0,
+				B9EAF276436C52849E2E04C5,
+				9B05B14CF4F3476C124177F2,
+				E09377945D2EEF90DB552403,
+				C334C811DA0917BF9CF0D8FB,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
@@ -1871,6 +2693,42 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$SRCROOT/../scripts/generate_version_header.sh\"\n";
+		};
+		0AF9CA0A7DB94F0463230A92 = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate version header";
+			outputPaths = (
+				"$(PROJECT_DERIVED_FILE_DIR)/synth1_version.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/../scripts/generate_version_header.sh\"\n";
+		};
+		7946050917EE43E7A68F93E5 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../scripts/compile_vst3_nibs.sh",
+				"$(SRCROOT)/vst3/vst3_prefix.h",
+				"$(SRCROOT)/resources/IDD_OPTION.xib",
+				"$(SRCROOT)/resources/IDD_SAVESOUND.xib",
+			);
+			name = "Compile renamed nibs";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/IDD_OPTION.nib",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/IDD_SAVESOUND.nib",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/../scripts/compile_vst3_nibs.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -2030,6 +2888,104 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D7312C5F3BC1B7988797BE9D = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				81CE85F7EC72A8D6F9B3183E,
+				B52CC41823F5CE4656939733,
+				610A1E266627F2FF3465B8FA,
+				C98C1CED3557D4755A045DEF,
+				87E3B3BFC4C010E0DC4F0401,
+				2566EA510B532E97F5E91B30,
+				872EA5D7A6ACB585720AA401,
+				A4ADD340855BA0358561D882,
+				D1E03FAF26AADC08D74AC8E6,
+				5C20B2EE9C638A408A040F52,
+				E16028B186819A8BF4455DC3,
+				1B4CE1313A8EDD8E415F7A5C,
+				ABB5AB8A668E113F4E476A12,
+				22E37C130679EEE6B41D2A09,
+				2AB30B393BB0AB60B1737EEE,
+				1935F3EDEA51CEDF5DCE8FFB,
+				BCCE79D03F462555FCFD7E72,
+				859DF5391F1A6C778955308B,
+				7E5C1DDAB419AC8C316D8F53,
+				EBB8F27EB2B268110D3CE5B3,
+				CA035986B53B62F7EB906E28,
+				B2811D27060249B9AA7E86DD,
+				0B6C308A4011F2419421E6DF,
+				4D9D47AE1B19367D53D27EE0,
+				C33850B83587CE3077FD6C16,
+				98CCD383E33BDA27433E171D,
+				11FD5DF592828E12B1D196FB,
+				89CEE14B5A801332B86699A4,
+				46B19D3EEA3CC76A1A3D8377,
+				A64231797BFD71B9E5EAD2A7,
+				63A0497CCF44806B3CA519EE,
+				5BF4D2DE829DC1DA1D85860E,
+				089683A33BCD26CACFEAA039,
+				75E85F36273E19671475C586,
+				B8780D71294431239FACAEAF,
+				671AF89D884849C13488AFE1,
+				250525CAF4291B77AE8184C1,
+				37B411B5DD90805F44073AA7,
+				401E75D262AB2E126F35A2E2,
+				6C6A5DFDA88F5BA39C081AAB,
+				3FDF32C6C36676D80A0394BC,
+				6A9C83BE768DEC9315BD5300,
+				5BC575038D717160CDF6F811,
+				ABC1548CA029E544246836FB,
+				F8FBC63BEC7367D3ED4C25A0,
+				A92A541CC848F52FBE66295F,
+				6FAFFFEB651B230F9EBC1C84,
+				EF74E8CB0BAFD48F95DCB0A5,
+				29385527B8BD2718AAE32C3F,
+				D4011B0B35BBE438B38B4225,
+				3B76E72160102BAB922C0A0A,
+				D5928928826C18739BD5C0E0,
+				E29C24FD44ACCD3D187D216E,
+				6E9A1E91EC3774B6F44FA441,
+				01EEDB9327400CCAC4A7C4AD,
+				C267F6B49533913FC1A130F5,
+				AB2C50712B551AF8D858BFA3,
+				A71B88B390E8BCEADAAC40ED,
+				1CAE33EDE158A901B0E35579,
+				602CC5ACC879BD67EA13BF76,
+				57C14F9465DD9612F1C72B78,
+				9593FCF260C38C0AB2427F3E,
+				1831EC954AA92ED5A969E793,
+				9BB8B8A61A967F0C3DAD4C8D,
+				78C5FB0B46FEC8593001E3AD,
+				FB9442C1075B9DE8ADD450E7,
+				E38F87CE0143BD929E3E5A22,
+				33904107F0600D6F1CFD7003,
+				A8015DDDABF19D5A5CA8E128,
+				3B84E17664AF37DFE65D7AF7,
+				F7142C2D41C7A826603FA2CE,
+				19065A03559BD41D583EAA33,
+				8AC9AD195C5C781A3BEFA528,
+				6064B82ACEFB1C3461347B15,
+				A52C73348D4ADF4D062ED3F2,
+				6489765DAACC64B04B28E8C9,
+				6CE617142833EB9907929FD6,
+				C640F6D4CFEBF81E1A1B883A,
+				B67229D6EB150BFD6D0E666F,
+				A227041AA8940759FF9E584E,
+				9B140B012F5398F0913CED75,
+				80EA7057C3D88E198D022F3F,
+				3C0F9E3ACB2F01D3ADDC8CC4,
+				0E9C1347BA0BFD7D4DBEAD53,
+				AEEBB0829A0AF946FE1F73A1,
+				F228763CDAB4DEADFDEF82E9,
+				C62DBB3E4B7E8327ED216262,
+				B5483A20AC3E55938D5735AA,
+				9A2701575B4791494818A0F4,
+				E80EEC6A602292C1D50383EA,
+				43F544A7732A4839F6AADBDA,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -2173,6 +3129,60 @@
 			};
 			name = Release;
 		};
+		D5B9505D67E7B58F81B29A4D = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = Synth1;
+				WRAPPER_EXTENSION = vst3;
+				INFOPLIST_FILE = "vst3/Synth1VST3-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = jp.daichi.synth1.vst3;
+				GENERATE_PKGINFO_FILE = YES;
+				INSTALL_PATH = "$(HOME)/Library/Audio/Plug-Ins/VST3";
+				COPY_PHASE_STRIP = NO;
+				GCC_PREFIX_HEADER = vst3/vst3_prefix.h;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					SYNTH1_VIEWFACTORY,
+					SYNTH1_VST3_BUILD,
+					"DEVELOPMENT=1",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/vst3sdk",
+				);
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				EXPORTED_SYMBOLS_FILE = vst3sdk/public.sdk/source/main/macexport.exp;
+			};
+			name = Debug;
+		};
+		37B749A187DD8B488B52C000 = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = Synth1;
+				WRAPPER_EXTENSION = vst3;
+				INFOPLIST_FILE = "vst3/Synth1VST3-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = jp.daichi.synth1.vst3;
+				GENERATE_PKGINFO_FILE = YES;
+				INSTALL_PATH = "$(HOME)/Library/Audio/Plug-Ins/VST3";
+				COPY_PHASE_STRIP = NO;
+				GCC_PREFIX_HEADER = vst3/vst3_prefix.h;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					SYNTH1_VIEWFACTORY,
+					SYNTH1_VST3_BUILD,
+					"RELEASE=1",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(SRCROOT)/vst3sdk",
+				);
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				EXPORTED_SYMBOLS_FILE = vst3sdk/public.sdk/source/main/macexport.exp;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -2199,6 +3209,15 @@
 			buildConfigurations = (
 				4344CF53E8077E62D615885C,
 				E71E32449445204B859E6815,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F5781827FCF49A02FF84EB09 = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D5B9505D67E7B58F81B29A4D,
+				37B749A187DD8B488B52C000,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -22,7 +22,9 @@ See: [THIRD_PARTY.md](docs/THIRD_PARTY.md)
 
 Requires macOS 12 or later.
 
-1. Download `Synth1-<version>-release.pkg` from the [latest release](https://github.com/synth1-decomp/synth1-arm/releases/latest).
+1. Download the installer for the format you want from the [latest release](https://github.com/synth1-decomp/synth1-arm/releases/latest):
+   - `Synth1-AU-<version>-release.pkg` for the Audio Unit plugin
+   - `Synth1-VST3-<version>-release.pkg` for the VST3 plugin
 2. Double-click the downloaded `.pkg` installer.
    1. macOS will show a scary looking warning popup and refuse to open the installer because it isn't signed yet.
    2. Click **Done** to dismiss the popup for now.
@@ -31,4 +33,8 @@ Requires macOS 12 or later.
 5. Proceed through the installer like you would any other.
 6. Open your DAW of choice and scan for plugins.
 
-To uninstall, delete `/Library/Audio/Plug-Ins/Components/Synth1.component`.
+#### Uninstalling
+
+To uninstall simply delete the plugin from your system:
+- Audio Unit: `/Library/Audio/Plug-Ins/Components/Synth1.component`
+- VST3: `/Library/Audio/Plug-Ins/VST3/Synth1.vst3`
