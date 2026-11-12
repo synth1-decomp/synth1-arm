@@ -4,6 +4,7 @@
  */
 #include "synth1vst3.h"
 #include "synth1vst3_hooks.h"
+#include "synth1vst3view.h"
 
 #include "pluginterfaces/base/ibstream.h"
 #include "pluginterfaces/base/ustring.h"
@@ -365,6 +366,12 @@ int Synth1Vst3::render(float* pL, float* pR, int numFrames)
         pos += len;
     }
     return allSilent;
+}
+
+IPlugView* PLUGIN_API Synth1Vst3::createView(FIDString name)
+{
+    if (name && strcmp(name, ViewType::kEditor) == 0) return new Synth1Vst3View(this);
+    return nullptr;
 }
 
 tresult PLUGIN_API Synth1Vst3::getMidiControllerAssignment(int32 busIndex, int16 /*channel*/,

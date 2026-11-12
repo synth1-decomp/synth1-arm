@@ -92,6 +92,7 @@ build() {
             # with the few VST3 SDK hosting classes the host uses
             xcrun clang++ "${target[@]}" -std=c++17 -O1 -g -Wall -DRELEASE=1 -I"$sdk" \
                 "$root/tests/vst3/vst3_tests.cpp" \
+                -x objective-c++ "$root/tests/vst3/view_host.mm" -x none \
                 "$sdk/pluginterfaces/base/coreiids.cpp" \
                 "$sdk/pluginterfaces/base/funknown.cpp" \
                 "$sdk/public.sdk/source/common/memorystream.cpp" \
@@ -99,7 +100,7 @@ build() {
                 "$sdk/public.sdk/source/vst/hosting/eventlist.cpp" \
                 "$sdk/public.sdk/source/vst/hosting/parameterchanges.cpp" \
                 "$build_dir/libau_isolation.dylib" \
-                -framework CoreFoundation \
+                -framework CoreFoundation -framework Cocoa \
                 -o "$test_binary"
             ;;
     esac

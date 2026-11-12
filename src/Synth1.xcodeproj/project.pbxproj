@@ -1155,6 +1155,10 @@
 			isa = PBXBuildFile;
 			fileRef = CDE1E69825191F5C88C07BDC;
 		};
+		43F544A7732A4839F6AADBDA = {
+			isa = PBXBuildFile;
+			fileRef = 0E1114D74E10624BD915074A;
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -2199,6 +2203,20 @@
 			path = vst3sdk/public.sdk/source/vst/utility/vst2persistence.cpp;
 			sourceTree = SOURCE_ROOT;
 		};
+		3B77455FC359A3832F5F3443 = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.c.h;
+			path = synth1vst3view.h;
+			sourceTree = "<group>";
+		};
+		0E1114D74E10624BD915074A = {
+			isa = PBXFileReference;
+			fileEncoding = 4;
+			lastKnownFileType = sourcecode.cpp.objcpp;
+			path = synth1vst3view.mm;
+			sourceTree = "<group>";
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2469,6 +2487,8 @@
 				520C1C321291ADF9DD5F94E8,
 				A6AFE7587679B108F4B71E05,
 				47541EF1177E69AF5C5CB412,
+				3B77455FC359A3832F5F3443,
+				0E1114D74E10624BD915074A,
 			);
 			path = vst3;
 			sourceTree = "<group>";
@@ -2962,6 +2982,7 @@
 				B5483A20AC3E55938D5735AA,
 				9A2701575B4791494818A0F4,
 				E80EEC6A602292C1D50383EA,
+				43F544A7732A4839F6AADBDA,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

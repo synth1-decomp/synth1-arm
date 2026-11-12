@@ -5,8 +5,9 @@
  * Loads Synth1.vst3 with CFBundle (bundleEntry / GetPluginFactory) and drives it only through
  * the VST3 interfaces, the way a host does: the class factory, buses, parameters, the MIDI
  * controller mapping (IMidiMapping), rendering with note events, parameter changes and the MIDI
- * controller proxy parameters, and the plug-in state (getState / setState), including state
- * saved by the original VST2 in the forms hosts hand it over.
+ * controller proxy parameters, the plug-in state (getState / setState), including state saved
+ * by the original VST2 in the forms hosts hand it over, and the editor (attached to an
+ * off-screen window).
  *
  * The golden scenarios of the Audio Unit tests (tests/au/au_tests.c) are replayed through the
  * VST3 interfaces after restoring the same default patch, and must reproduce the AU's golden
@@ -47,6 +48,9 @@
 #include "public.sdk/source/common/memorystream.h"
 #include "public.sdk/source/vst/hosting/eventlist.h"
 #include "public.sdk/source/vst/hosting/parameterchanges.h"
+#include "pluginterfaces/gui/iplugview.h"
+
+#include "view_host.h"
 
 #include "../au/golden_scenarios.h"
 
@@ -661,6 +665,60 @@ static void test_state_reject(void)
 }
 
 /* ------------------------------------------------------------------------------------------ */
+/* editor                                                                                     */
+
+/** Renders a note; true if it sounded (the instance still works). */
+static bool still_renders(Plugin& p)
+{
+    std::vector<::Event> ev = { { 0, 0x90, 60, 100, 0 }, { 4096, 0x80, 60, 0, 0 } };
+    Run r;
+    r.plugin = &p;
+    render_events(r, 8192, kB512, 1, ev.data(), (int)ev.size());
+    return !r.err && r.peak > 0.05;
+}
+
+/**
+ * The editor is an NSView of 466 x 340 at the option dialog's zoom (150% by default). Attached to
+ * a host window it adds the VST3's own GUI view (the renamed class, not the Audio Unit's), and
+ * removing it takes the GUI down again; twice, as when a user closes and reopens the editor.
+ */
+static void test_editor(void)
+{
+    Plugin p;
+    REQUIRE(p.open(44100, 512));
+    CHECK(p.controller->createView("something else") == nullptr);
+
+    for (int round = 0; round < 2; round++) {
+        IPlugView* view = p.controller->createView(ViewType::kEditor);
+        REQUIRE(view != nullptr);
+        CHECK(view->isPlatformTypeSupported(kPlatformTypeNSView) == kResultTrue);
+        CHECK(view->isPlatformTypeSupported(kPlatformTypeHWND) != kResultTrue);
+        CHECK(view->canResize() != kResultTrue);
+        ViewRect size;
+        REQUIRE(view->getSize(&size) == kResultOk);
+        CHECK_EQ(size.getWidth(), 466 * 150 / 100);
+        CHECK_EQ(size.getHeight(), 340 * 150 / 100);
+
+        void* parent = view_host_open(size.getWidth(), size.getHeight());
+        REQUIRE(view->attached(parent, kPlatformTypeNSView) == kResultOk);
+        CHECK_EQ(view_host_subview_count(parent), 1);
+        CHECK_STREQ(view_host_subview_class(parent, 0), "S1V3_Synth1CocoaView");
+        double w, h;
+        view_host_subview_size(parent, 0, &w, &h);
+        CHECK_EQ((long)w, size.getWidth());
+        CHECK_EQ((long)h, size.getHeight());
+        CHECK(view->attached(parent, kPlatformTypeNSView) != kResultOk);    // already attached
+
+        REQUIRE(view->removed() == kResultOk);
+        CHECK_EQ(view_host_subview_count(parent), 0);
+        view_host_close(parent);
+        view->release();
+        CHECK(still_renders(p));
+    }
+    p.close();
+}
+
+/* ------------------------------------------------------------------------------------------ */
 /* golden scenarios (tests/au/golden_scenarios.h), replayed through the VST3 interfaces        */
 
 /** Restores the AU tests' default patch, then renders the scenario. */
@@ -775,6 +833,7 @@ static const struct { const char* name; void (*fn)(void); } kTests[] = {
     { "vst3.state_roundtrip", test_state_roundtrip },
     { "vst3.state_vst2", test_state_vst2 },
     { "vst3.state_reject", test_state_reject },
+    { "vst3.editor", test_editor },
     { "vst3.golden", test_golden },
 };
 
