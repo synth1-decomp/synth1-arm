@@ -3,8 +3,9 @@
 # Xcode.
 #
 # The AU tests (tests/au/au_tests.c) are built with SYNTH1_MODERN_BUILD; the VST3 tests
-# (tests/vst3/vst3_tests.cpp) drive the plug-in through the VST3 interfaces. Both are kept away
-# from the user's Synth1 settings and files (tests/au/au_isolation.c).
+# (tests/vst3/vst3_tests.cpp) drive the plug-in through the VST3 interfaces. Both replay the golden
+# scenarios (tests/au/golden_scenarios.h) against tests/au/reference.txt and are kept away from the
+# user's Synth1 settings and files (tests/au/au_isolation.c).
 set -euo pipefail
 
 usage() {
@@ -93,6 +94,7 @@ build() {
                 "$root/tests/vst3/vst3_tests.cpp" \
                 "$sdk/pluginterfaces/base/coreiids.cpp" \
                 "$sdk/pluginterfaces/base/funknown.cpp" \
+                "$sdk/public.sdk/source/common/memorystream.cpp" \
                 "$sdk/public.sdk/source/vst/vstinitiids.cpp" \
                 "$sdk/public.sdk/source/vst/hosting/eventlist.cpp" \
                 "$sdk/public.sdk/source/vst/hosting/parameterchanges.cpp" \
@@ -104,7 +106,7 @@ build() {
 }
 
 # Runs the tests with Synth1's settings and folders in a temporary home folder (see
-# tests/au/au_isolation.c). The AU host runs each golden scenario in a fresh child process of itself.
+# tests/au/au_isolation.c). The hosts run each golden scenario in a fresh child process of themselves.
 run_tests() {
     local status=0 args=()
     test_home=$(mktemp -d "${TMPDIR:-/tmp}/synth1-$format-tests.XXXXXX")
@@ -117,6 +119,7 @@ run_tests() {
             ;;
         vst3)
             echo "Testing $bundle ($arch)"
+            args=("$root/tests")
             ;;
     esac
     SYNTH1_TEST_HOME=$test_home "$test_binary" "$bundle" ${args[@]+"${args[@]}"} \

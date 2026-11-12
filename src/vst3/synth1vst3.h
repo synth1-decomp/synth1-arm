@@ -67,6 +67,11 @@ public:
     Steinberg::tresult PLUGIN_API initialize(Steinberg::FUnknown* context) SMTG_OVERRIDE;
     Steinberg::tresult PLUGIN_API terminate() SMTG_OVERRIDE;
 
+    // IComponent: the plug-in state is the engine's "Synth1 VST Chunk Data", the same bytes the
+    // VST2 and the AU save
+    Steinberg::tresult PLUGIN_API setState(Steinberg::IBStream* state) SMTG_OVERRIDE;
+    Steinberg::tresult PLUGIN_API getState(Steinberg::IBStream* state) SMTG_OVERRIDE;
+
     // IAudioProcessor
     Steinberg::tresult PLUGIN_API setBusArrangements(Steinberg::Vst::SpeakerArrangement* inputs, Steinberg::int32 numIns,
                                                      Steinberg::Vst::SpeakerArrangement* outputs, Steinberg::int32 numOuts) SMTG_OVERRIDE;
@@ -110,6 +115,17 @@ private:
         unsigned char status, data1, data2;
         int frame;
     };
+
+    /**
+     * @brief Finds the engine state in a stream's bytes: the chunk itself (also the old DXi
+     *        format), the chunk inside a VST2 bank or program (fxb / fxp, also in a Steinberg
+     *        host's 'VstW' wrapper), or the chunk behind another host's header.
+     *
+     * @param data  The bytes read from the stream.
+     * @param[out] chunk  The engine state.
+     * @return True if a state was found.
+     */
+    bool findChunk(const std::vector<unsigned char>& data, std::vector<unsigned char>& chunk) const;
 
     /** @brief Applies the parameter changes of a block and turns MIDI proxy changes into m_events. */
     void applyParameterChanges(Steinberg::Vst::IParameterChanges* changes);

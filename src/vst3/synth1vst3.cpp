@@ -5,10 +5,13 @@
 #include "synth1vst3.h"
 #include "synth1vst3_hooks.h"
 
+#include "pluginterfaces/base/ibstream.h"
 #include "pluginterfaces/base/ustring.h"
 #include "pluginterfaces/vst/ivstevents.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 #include "pluginterfaces/vst/ivstprocesscontext.h"
+#include "public.sdk/source/common/memorystream.h"
+#include "public.sdk/source/vst/utility/vst2persistence.h"
 
 #include <algorithm>
 
@@ -90,6 +93,90 @@ tresult PLUGIN_API Synth1Vst3::terminate()
     delete m_pSynth;
     m_pSynth = nullptr;
     return SingleComponentEffect::terminate();
+}
+
+// The engine's state (VSTChunk in techpop/synth1.cpp): a header string, then 0xA40 bytes in all.
+static const char kChunkHeader[] = "Synth1 VST Chunk Data";
+static const int kChunkSize = 0xA40;
+static const int kMinStateSize = 0x20;         // the header field; getChunkVer() strcmp()s it
+static const int kStateBufferSize = 0x1000;    // SYNTH1_CHUNK_SIZE of the AU
+static const int32 kVst2UniqueID = 'S1Vs';     // the original VST2's unique id
+
+tresult PLUGIN_API Synth1Vst3::getState(IBStream* state)
+{
+    if (state == nullptr) return kInvalidArgument;
+    std::vector<unsigned char> buf(kStateBufferSize);
+    int size = m_pSynth->makeVSTChunkData(buf.data(), (int)buf.size());
+    int32 written = 0;
+    if (state->write(buf.data(), size, &written) != kResultOk || written != size) return kResultFalse;
+    return kResultOk;
+}
+
+tresult PLUGIN_API Synth1Vst3::setState(IBStream* state)
+{
+    if (state == nullptr) return kInvalidArgument;
+    std::vector<unsigned char> data;
+    unsigned char buf[4096];
+    int32 n = 0;
+    while (state->read(buf, sizeof(buf), &n) == kResultOk && n > 0) {
+        data.insert(data.end(), buf, buf + n);
+    }
+
+    std::vector<unsigned char> chunk;
+    if (!findChunk(data, chunk)) return kResultFalse;
+
+    // Synth1::RestoreState
+    int ver = m_pSynth->getChunkVer(chunk.data(), (int)chunk.size());
+    if (ver == -1) return kResultFalse;
+    if (ver == 0) {
+        m_pSynth->setDxiSaveParams(chunk.data());
+    } else {
+        m_pSynth->setVSTChunkData(chunk.data(), (int)chunk.size(), ver);
+    }
+
+    // the host reads the restored values back from the controller part
+    for (ParamID id = 0; id < kNumSoundParams; id++) {
+        if (Parameter* param = parameters.getParameter(id)) param->setNormalized(engineValue(id));
+    }
+    if (Parameter* param = parameters.getParameter(kParamMasterVolume)) {
+        param->setNormalized(engineValue(kParamMasterVolume));
+    }
+    return kResultOk;
+}
+
+bool Synth1Vst3::findChunk(const std::vector<unsigned char>& data, std::vector<unsigned char>& chunk) const
+{
+    // the engine's own formats, as the VST2 and the AU save them
+    if (data.size() >= kMinStateSize && m_pSynth->getChunkVer((unsigned char*)data.data(), (int)data.size()) != -1) {
+        chunk = data;
+        return true;
+    }
+
+    // a VST2 bank or program holding the chunk (hosts that migrate VST2 projects pass these)
+    auto fromVst2 = [&](const VST3::Vst2xChunk& c) {
+        chunk.assign((const unsigned char*)c.data(), (const unsigned char*)c.data() + c.size());
+        return chunk.size() >= kMinStateSize && m_pSynth->getChunkVer(chunk.data(), (int)chunk.size()) != -1;
+    };
+    {
+        MemoryStream stream((void*)data.data(), (TSize)data.size());
+        auto bank = VST3::tryVst2StateLoad(stream, VST3::Optional<int32_t>(kVst2UniqueID));
+        if (bank && !bank->chunk.empty() && fromVst2(bank->chunk)) return true;
+    }
+    {
+        MemoryStream stream((void*)data.data(), (TSize)data.size());
+        auto program = VST3::tryVst2ProgramLoad(stream, VST3::Optional<int32_t>(kVst2UniqueID));
+        if (program && !program->chunk.empty() && fromVst2(program->chunk)) return true;
+    }
+
+    // a host's own header in front of the chunk (FL Studio puts 21 bytes there): the whole chunk
+    // must follow its header string, near the start
+    for (size_t off = 1; off < 256 && off + kChunkSize <= data.size(); off++) {
+        if (memcmp(&data[off], kChunkHeader, sizeof(kChunkHeader)) == 0) {
+            chunk.assign(data.begin() + off, data.begin() + off + kChunkSize);
+            return m_pSynth->getChunkVer(chunk.data(), (int)chunk.size()) > 0;
+        }
+    }
+    return false;
 }
 
 tresult PLUGIN_API Synth1Vst3::setBusArrangements(SpeakerArrangement* inputs, int32 numIns,

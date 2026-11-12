@@ -97,7 +97,15 @@ scripts/run_integration_tests.sh --format vst3 --vst3 path/to/Synth1.vst3 --arch
 
 A small C++ host loads the built plug-in and drives it only through the VST3 interfaces, as a DAW
 does: the class factory (including the class id derived from the original VST2), buses, the
-parameters (the VST2's ids), the MIDI controller mapping, and rendering with note events,
-parameter changes and the MIDI controller proxy parameters. Like the AU tests it runs with
-`tests/au/au_isolation.c` inserted, so it never touches the user's Synth1 settings or `~/Documents`.
-These tests use the modern toolchain (current Xcode), not the 10.13 setup.
+parameters (the VST2's ids), the MIDI controller mapping, rendering with note events, parameter
+changes and the MIDI controller proxy parameters, and the plug-in state. Like the AU tests it runs
+with `tests/au/au_isolation.c` inserted, so it never touches the user's Synth1 settings or
+`~/Documents`. These tests use the modern toolchain (current Xcode), not the 10.13 setup.
+
+- **Golden scenarios:** the six AU scenarios are replayed through VST3 events after restoring
+  `tests/au/default_state.plist` with `setState`, each in a fresh child process, and must match
+  `tests/au/reference.txt` (generated from the original release).
+- **VST2 state:** `tests/data/vst3/fl_studio_synth1_state.bin` is the Synth1 record of a real FL
+  Studio project made with the original Windows `Synth1 VST64.dll` (FL's 21-byte header, then the
+  2624-byte "Synth1 VST Chunk Data"). It must load as is, and as a VST2 bank, a VST2 program and a
+  bank in a Steinberg host's `VstW` wrapper (built by the test), restoring the same patch.
