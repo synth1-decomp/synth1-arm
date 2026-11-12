@@ -24,6 +24,12 @@ const char* view_host_subview_class(void* parent, int index);
 /** Frame size of a subview (0 x 0 if there is none). */
 void view_host_subview_size(void* parent, int index, double* width, double* height);
 
+/**
+ * Drags vertically with the mouse on the first subview, at panel coordinates (466 x 340, top left
+ * origin), dy points up (> 0) or down, with the window's backing scale reported as 2 (Retina).
+ */
+void view_host_drag(void* parent, double x, double y, int dy);
+
 #ifdef __cplusplus
 }
 #endif

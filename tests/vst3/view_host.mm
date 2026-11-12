@@ -47,3 +47,30 @@ void view_host_subview_size(void* parent, int index, double* width, double* heig
     *width = frame.size.width;
     *height = frame.size.height;
 }
+
+static CGFloat retina_scale(id self, SEL _cmd) { return 2; }
+
+static NSEvent* mouse_event(NSEventType type, NSWindow* window, NSPoint location)
+{
+    return [NSEvent mouseEventWithType:type location:location modifierFlags:0 timestamp:0
+                          windowNumber:[window windowNumber] context:nil eventNumber:0 clickCount:1 pressure:1];
+}
+
+void view_host_drag(void* parent, double x, double y, int dy)
+{
+    NSView* view = [[(__bridge NSView*)parent subviews] objectAtIndex:0];
+    NSWindow* window = [view window];
+    NSRect b = [view bounds];
+    // panel coordinates (466 x 340, top left origin) to window coordinates
+    NSPoint p = [view convertPoint:NSMakePoint(x * b.size.width / 466, b.size.height * (1 - y / 340)) toView:nil];
+    // as on a Retina display, whatever screen the tests run on
+    Method m = class_getInstanceMethod([NSWindow class], @selector(backingScaleFactor));
+    IMP original = method_setImplementation(m, (IMP)retina_scale);
+    [view mouseDown:mouse_event(NSEventTypeLeftMouseDown, window, p)];
+    for (int i = 0; i < abs(dy); i++) {
+        p.y += dy > 0 ? 1 : -1;     // Cocoa's y points up
+        [view mouseDragged:mouse_event(NSEventTypeLeftMouseDragged, window, p)];
+    }
+    [view mouseUp:mouse_event(NSEventTypeLeftMouseUp, window, p)];
+    method_setImplementation(m, original);
+}

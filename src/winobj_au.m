@@ -175,7 +175,12 @@ void ScreenToClient(HWND hWnd, POINT* pt)
     CGRect display = CGDisplayBounds(CGMainDisplayID());
     NSWindow* window = [(NSView*)hWnd window];
     NSPoint p = NSMakePoint(pt->x, display.size.height - pt->y);
+#ifdef SYNTH1_MODERN_BUILD
+    // Account for Retina display resolution when handling knob drags
+    p = [(NSView*)hWnd convertPoint:[window convertPointFromScreen:p] fromView:nil];
+#else
     p = [(NSView*)hWnd convertPointFromBase:[window convertScreenToBase:p]];
+#endif
     pt->x = p.x;
     if(![(NSView*)hWnd isFlipped]){
         p.y = [(NSView*)hWnd bounds].size.height - p.y;
