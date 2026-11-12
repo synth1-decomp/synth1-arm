@@ -83,8 +83,8 @@ jobs:
         run: sudo softwareupdate --install-rosetta --agree-to-license
       - name: Check the component
         run: scripts/check_component.sh "$COMPONENT"
-      - name: Run AU tests
-        run: scripts/run_au_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
+      - name: Run integration tests
+        run: scripts/run_integration_tests.sh --format au --arch ${{ matrix.arch }} --au "$COMPONENT"
       - name: Run auval tests
         run: scripts/run_auval_tests.sh --arch ${{ matrix.arch }} --component "$COMPONENT"
 

@@ -86,3 +86,18 @@ document these instead of "fixing" them; the most notable:
 - Chorus type 3 does not survive a round trip through the host parameter value.
 - `CharLower()` does nothing, so upper-case `.ZIP` bank files are ignored.
 - `AudioUnitReset` does not stop sounding notes.
+
+## VST3 tests (`tests/vst3/`)
+
+```
+scripts/build_plugin.sh --format vst3                                    # build/modern/Build/Products/Release/Synth1.vst3
+scripts/run_integration_tests.sh --format vst3                           # test it
+scripts/run_integration_tests.sh --format vst3 --vst3 path/to/Synth1.vst3 --arch x86_64 [filter ...]
+```
+
+A small C++ host loads the built plug-in and drives it only through the VST3 interfaces, as a DAW
+does: the class factory (including the class id derived from the original VST2), buses, the
+parameters (the VST2's ids), the MIDI controller mapping, and rendering with note events,
+parameter changes and the MIDI controller proxy parameters. Like the AU tests it runs with
+`tests/au/au_isolation.c` inserted, so it never touches the user's Synth1 settings or `~/Documents`.
+These tests use the modern toolchain (current Xcode), not the 10.13 setup.

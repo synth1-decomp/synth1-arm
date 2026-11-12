@@ -94,7 +94,7 @@ static void fail_at(const char* file, int line, const char* fmt, ...)
 /* zero-filled heap                                                                           */
 
 /*
- * Not in the modern build (scripts/run_au_tests.sh): it initializes m_hNotifyWnd, and patching
+ * Not in the modern build (scripts/run_integration_tests.sh): it initializes m_hNotifyWnd, and patching
  * the malloc zones crashes on current macOS.
  */
 #ifndef SYNTH1_MODERN_BUILD
@@ -645,7 +645,7 @@ static void test_bundle_component(void)
     CHECK_EQ(d.componentManufacturer, 'daiC');
     CHECK_OK(AudioComponentGetVersion(g_comp, &ver));
 #ifdef SYNTH1_MODERN_BUILD
-    /* The version hosts see, from Info.plist. scripts/run_au_tests.sh passes the expected one. */
+    /* The version hosts see, from Info.plist. scripts/run_integration_tests.sh passes the expected one. */
     {
         CFNumberRef n = (CFNumberRef)CFDictionaryGetValue(c, CFSTR("version"));
         SInt64 plistVer = -1;

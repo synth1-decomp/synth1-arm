@@ -6,7 +6,11 @@
 #include "synth1vst3_hooks.h"
 
 #include "pluginterfaces/base/ustring.h"
+#include "pluginterfaces/vst/ivstevents.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
+#include "pluginterfaces/vst/ivstprocesscontext.h"
+
+#include <algorithm>
 
 #include "../windef.h"
 #include "../techpop/common.h"
@@ -64,6 +68,20 @@ tresult PLUGIN_API Synth1Vst3::initialize(FUnknown* context)
     }
     parameters.addParameter(STR16("master volume"), nullptr, 0, engineValue(kParamMasterVolume),
                             ParameterInfo::kCanAutomate, kParamMasterVolume);
+
+    // MIDI controller proxies (getMidiControllerAssignment); hidden, not automatable
+    for (int32 n = 0; n < kNumMidiProxies; n++) {
+        char name[32];
+        if (n == kAfterTouch) snprintf(name, sizeof(name), "MIDI channel pressure");
+        else if (n == kPitchBend) snprintf(name, sizeof(name), "MIDI pitch bend");
+        else snprintf(name, sizeof(name), "MIDI CC %d", (int)n);
+        UString128 title;
+        title.fromAscii(name);
+        parameters.addParameter(title, nullptr, 0, (n == kPitchBend) ? 0.5 : 0.0,
+                                ParameterInfo::kIsHidden, kMidiProxyBase + n);
+    }
+
+    processContextRequirements.needTempo();
     return kResultOk;
 }
 
@@ -91,23 +109,185 @@ tresult PLUGIN_API Synth1Vst3::canProcessSampleSize(int32 symbolicSampleSize)
 
 tresult PLUGIN_API Synth1Vst3::setupProcessing(ProcessSetup& setup)
 {
-    m_pSynth->setSamplingFreq((int)setup.sampleRate);
+    // Only on a change, like the AU (AUBase calls ChangeStreamFormat only for a different
+    // format): setSamplingFreq() reinitializes engine state, so calling it again at the current
+    // rate would make the first notes sound different from the AU.
+    if ((int)setup.sampleRate != m_pSynth->m_samplingFreq) {
+        m_pSynth->setSamplingFreq((int)setup.sampleRate);
+    }
+    m_events.reserve(1024);     // grows in process() only if a block brings more
     return SingleComponentEffect::setupProcessing(setup);
 }
 
 tresult PLUGIN_API Synth1Vst3::process(ProcessData& data)
 {
-    // Skeleton: silence. Rendering, MIDI and parameter input come in the next step.
-    for (int32 bus = 0; bus < data.numOutputs; bus++) {
-        AudioBusBuffers& out = data.outputs[bus];
-        for (int32 ch = 0; ch < out.numChannels; ch++) {
-            if (out.channelBuffers32 && out.channelBuffers32[ch]) {
-                memset(out.channelBuffers32[ch], 0, data.numSamples * sizeof(float));
-            }
-        }
-        out.silenceFlags = ((uint64)1 << out.numChannels) - 1;
+    // follow the host tempo (Synth1::Render)
+    if (data.processContext && (data.processContext->state & ProcessContext::kTempoValid) &&
+        data.processContext->tempo > 0) {
+        m_pSynth->setBaseTempo((float)data.processContext->tempo);
     }
+
+    m_events.clear();
+    applyParameterChanges(data.inputParameterChanges);
+    collectEvents(data.inputEvents);
+    std::stable_sort(m_events.begin(), m_events.end(),
+                     [](const MidiEvent& a, const MidiEvent& b) { return a.frame < b.frame; });
+
+    if (data.numOutputs == 0 || data.outputs[0].numChannels < 2 || data.numSamples <= 0) {
+        // no audio to render (e.g. a parameter flush): still play the MIDI
+        for (const MidiEvent& ev : m_events) {
+            m_pSynth->processMIDIShortData(ev.status, ev.data1, ev.data2);
+        }
+        return kResultOk;
+    }
+
+    AudioBusBuffers& out = data.outputs[0];
+    int silent = render(out.channelBuffers32[0], out.channelBuffers32[1], data.numSamples);
+    out.silenceFlags = silent ? 3 : 0;
     return kResultOk;
+}
+
+void Synth1Vst3::applyParameterChanges(IParameterChanges* changes)
+{
+    if (changes == nullptr) return;
+    for (int32 i = 0; i < changes->getParameterCount(); i++) {
+        IParamValueQueue* queue = changes->getParameterData(i);
+        if (queue == nullptr || queue->getPointCount() <= 0) continue;
+        ParamID id = queue->getParameterId();
+        int32 offset;
+        ParamValue value;
+
+        if (id >= kMidiProxyBase && id < kMidiProxyBase + kNumMidiProxies) {
+            // every point becomes a MIDI message at its offset
+            int32 n = id - kMidiProxyBase;
+            for (int32 p = 0; p < queue->getPointCount(); p++) {
+                if (queue->getPoint(p, offset, value) != kResultOk) continue;
+                MidiEvent ev;
+                ev.frame = offset & ~15;    // as Synth1::HandleMidiEvent
+                if (n == kPitchBend) {
+                    int v = std::min(16383, std::max(0, (int)(value * 16383.0 + 0.5)));
+                    ev.status = 0xE0;
+                    ev.data1 = v & 0x7F;
+                    ev.data2 = v >> 7;
+                } else {
+                    int v = std::min(127, std::max(0, (int)(value * 127.0 + 0.5)));
+                    ev.status = (n == kAfterTouch) ? 0xD0 : 0xB0;
+                    ev.data1 = (n == kAfterTouch) ? v : n;
+                    ev.data2 = (n == kAfterTouch) ? 0 : v;
+                }
+                m_events.push_back(ev);
+            }
+            continue;
+        }
+
+        // Synth1 parameters take the block's last value (as the AU and the VST2 apply a host
+        // value immediately)
+        if (queue->getPoint(queue->getPointCount() - 1, offset, value) != kResultOk) continue;
+        if (id < kNumSoundParams) {
+            // Synth1::SetParameter
+            m_pSynth->setSoundParam(id, CSynthesizer1::valVst2Syn(id, (float)value, 113), 0);
+        } else if (id == kParamMasterVolume) {
+            // The VST2 (setParameter, index 254) converted 0.0 and values >= 1.0 by truncation,
+            // which made 1.0 the quietest setting; here the whole range uses valVst2Syn.
+            m_pSynth->setCommonParam(id, CSynthesizer1::valVst2Syn(id, (float)value, 113), 0);
+        } else {
+            continue;
+        }
+        m_pSynth->m_bParamChanged[id] = 1;
+        if (m_pSynth->m_hNotifyWnd) {
+            PostMessage(m_pSynth->m_hNotifyWnd, WM_APP + 3, 0, 0);
+        }
+    }
+}
+
+void Synth1Vst3::collectEvents(IEventList* events)
+{
+    if (events == nullptr) return;
+    for (int32 i = 0; i < events->getEventCount(); i++) {
+        Event e;
+        if (events->getEvent(i, e) != kResultOk) continue;
+        MidiEvent ev;
+        ev.frame = e.sampleOffset & ~15;    // as Synth1::HandleMidiEvent
+        switch (e.type) {
+        case Event::kNoteOnEvent:
+            if (e.noteOn.pitch < 0 || e.noteOn.pitch > 127) continue;
+            ev.status = 0x90;
+            ev.data1 = (unsigned char)e.noteOn.pitch;
+            // a note-on always has a velocity of at least 1 (0 would be a note-off in MIDI)
+            ev.data2 = (unsigned char)std::min(127, std::max(1, (int)(e.noteOn.velocity * 127.0f + 0.5f)));
+            break;
+        case Event::kNoteOffEvent:
+            if (e.noteOff.pitch < 0 || e.noteOff.pitch > 127) continue;
+            ev.status = 0x80;
+            ev.data1 = (unsigned char)e.noteOff.pitch;
+            ev.data2 = (unsigned char)std::min(127, std::max(0, (int)(e.noteOff.velocity * 127.0f + 0.5f)));
+            break;
+        case Event::kPolyPressureEvent:
+            if (e.polyPressure.pitch < 0 || e.polyPressure.pitch > 127) continue;
+            ev.status = 0xA0;
+            ev.data1 = (unsigned char)e.polyPressure.pitch;
+            ev.data2 = (unsigned char)std::min(127, std::max(0, (int)(e.polyPressure.pressure * 127.0f + 0.5f)));
+            break;
+        default:
+            continue;   // sysex and the rest are ignored, as in the AU
+        }
+        m_events.push_back(ev);
+    }
+}
+
+int Synth1Vst3::render(float* pL, float* pR, int numFrames)
+{
+    // Synth1::Process1: render up to each event, then play it
+    float buf[512] __attribute__((aligned(32)));
+    int bSilent;
+    int allSilent = 1;
+    size_t evNo = 0;
+    int pos = 0;
+
+    while (numFrames > 0) {
+        int len = numFrames;
+        const MidiEvent* pEvent = NULL;
+        if (evNo < m_events.size()) {
+            pEvent = &m_events[evNo];
+            len = pEvent->frame - pos;
+            if (numFrames < len) len = numFrames;
+        }
+        int rest = len;
+        while (rest > 0) {
+            int size = (rest > (int)(sizeof(buf) / sizeof(float) / 2)) ? (int)(sizeof(buf) / sizeof(float) / 2) : rest;
+            int n = m_pSynth->processSignalW(size, buf, &bSilent);
+            if (bSilent) {
+                for (int i = 0; i < n * 2; i += 2) {
+                    *pL++ = 0;
+                    *pR++ = 0;
+                }
+            } else {
+                allSilent = 0;
+                for (int i = 0; i < n * 2; i += 2) {
+                    *pL++ = buf[i];
+                    *pR++ = buf[i + 1];
+                }
+            }
+            rest -= n;
+        }
+        numFrames -= len;
+        if (pEvent) {
+            m_pSynth->processMIDIShortData(pEvent->status, pEvent->data1, pEvent->data2);
+            evNo++;
+        }
+        pos += len;
+    }
+    return allSilent;
+}
+
+tresult PLUGIN_API Synth1Vst3::getMidiControllerAssignment(int32 busIndex, int16 /*channel*/,
+                                                         CtrlNumber midiControllerNumber, ParamID& id)
+{
+    if (busIndex != 0 || midiControllerNumber < 0 || midiControllerNumber >= kNumMidiProxies) {
+        return kResultFalse;
+    }
+    id = kMidiProxyBase + midiControllerNumber;
+    return kResultTrue;
 }
 
 ParamValue Synth1Vst3::engineValue(ParamID id) const

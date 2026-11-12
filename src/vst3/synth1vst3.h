@@ -10,6 +10,10 @@
 #define __SYNTH1VST3_H__
 
 #include "public.sdk/source/vst/vstsinglecomponenteffect.h"
+#include "pluginterfaces/vst/ivsteditcontroller.h"
+#include "pluginterfaces/vst/ivstmidicontrollers.h"
+
+#include <vector>
 
 class CSynthesizer1;
 
@@ -26,6 +30,14 @@ namespace Synth1 {
 enum : Steinberg::Vst::ParamID {
     kNumSoundParams = 99,       ///< ids 0..98: patch parameters
     kParamMasterVolume = 254,   ///< master volume (CSynthesizer1::setCommonParam)
+
+    /**
+     * Hidden parameters that carry MIDI controllers, which VST3 hosts do not send as events:
+     * kMidiProxyBase + n for CC n (0..127), Steinberg::Vst::kAfterTouch (channel pressure) and
+     * Steinberg::Vst::kPitchBend. One set serves all channels; the engine ignores the channel.
+     */
+    kMidiProxyBase = 1000,
+    kNumMidiProxies = Steinberg::Vst::kCountCtrlNumber,
 };
 
 /**
@@ -42,7 +54,7 @@ static const Steinberg::FUID kClassID(0x56535453, 0x31567373, 0x796E7468, 0x3120
 /**
  * @brief The plug-in.
  */
-class Synth1Vst3 : public Steinberg::Vst::SingleComponentEffect
+class Synth1Vst3 : public Steinberg::Vst::SingleComponentEffect, public Steinberg::Vst::IMidiMapping
 {
 public:
     Synth1Vst3();
@@ -62,6 +74,17 @@ public:
     Steinberg::tresult PLUGIN_API setupProcessing(Steinberg::Vst::ProcessSetup& setup) SMTG_OVERRIDE;
     Steinberg::tresult PLUGIN_API process(Steinberg::Vst::ProcessData& data) SMTG_OVERRIDE;
 
+    // IMidiMapping
+    Steinberg::tresult PLUGIN_API getMidiControllerAssignment(Steinberg::int32 busIndex, Steinberg::int16 channel,
+                                                              Steinberg::Vst::CtrlNumber midiControllerNumber,
+                                                              Steinberg::Vst::ParamID& id) SMTG_OVERRIDE;
+
+    OBJ_METHODS(Synth1Vst3, SingleComponentEffect)
+    DEFINE_INTERFACES
+        DEF_INTERFACE(Steinberg::Vst::IMidiMapping)
+    END_DEFINE_INTERFACES(SingleComponentEffect)
+    REFCOUNT_METHODS(SingleComponentEffect)
+
     /** @brief The engine of this instance. */
     CSynthesizer1* synth() const { return m_pSynth; }
 
@@ -80,6 +103,28 @@ public:
 
 private:
     /**
+     * @brief MIDI message for the engine, at a sample offset in the current block
+     *        (the AU's Synth1MidiEvent).
+     */
+    struct MidiEvent {
+        unsigned char status, data1, data2;
+        int frame;
+    };
+
+    /** @brief Applies the parameter changes of a block and turns MIDI proxy changes into m_events. */
+    void applyParameterChanges(Steinberg::Vst::IParameterChanges* changes);
+
+    /** @brief Appends the block's note events to m_events. */
+    void collectEvents(Steinberg::Vst::IEventList* events);
+
+    /**
+     * @brief Renders a block, playing m_events at their offsets (Synth1::Process1).
+     *
+     * @return Nonzero if the whole block was silent.
+     */
+    int render(float* pL, float* pR, int numFrames);
+
+    /**
      * @brief Returns a parameter's current value from the engine, normalized like the VST2.
      *
      * @param id    Parameter id (0..98 or kParamMasterVolume).
@@ -88,6 +133,7 @@ private:
     Steinberg::Vst::ParamValue engineValue(Steinberg::Vst::ParamID id) const;
 
     CSynthesizer1* m_pSynth;
+    std::vector<MidiEvent> m_events;    ///< MIDI of the current block, sorted by frame
 };
 
 } // namespace Synth1
